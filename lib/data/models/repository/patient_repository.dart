@@ -165,4 +165,61 @@ class PatientRepository {
       return const Left("Terjadi kesalahan saat menghubungkan pasien.");
     }
   }
+
+  // FUNGSI MENCARI PASIEN TERHUBUNG
+  Future<Either<String, List<PatientSearchResult>>> searchConnectedPatients(
+    String queryNama,
+  ) async {
+    try {
+      final doctorId = await _getDoctorIdFromLocalStorage();
+      if (doctorId == null) {
+        developer.log(
+          "PatientRepository: Gagal searchConnectedPatients, ID Dokter tidak ditemukan.",
+        );
+        return const Left("ID Dokter tidak ditemukan. Mohon login ulang.");
+      }
+
+      developer.log(
+        "PatientRepository: Mengirim request pencarian pasien dengan nama: $queryNama untuk dokter: $doctorId",
+      );
+
+      final response = await _httpClient.get(
+        'pasien/terhubung/cari?nama=$queryNama',
+      );
+
+      developer.log(
+        "PatientRepository - searchConnectedPatients: Status Code: ${response.statusCode}",
+      );
+      developer.log(
+        "PatientRepository - searchConnectedPatients: Body: ${response.body}",
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        final responseModel = PatientSearchListResponseModel.fromMap(
+          responseBody,
+        );
+        developer.log(
+          "PatientRepository - searchConnectedPatients: Berhasil, ${responseModel.data.length} hasil ditemukan.",
+        );
+        return Right(responseModel.data);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message =
+            errorBody['message'] ?? 'Gagal mencari pasien terhubung.';
+        developer.log(
+          "PatientRepository - searchConnectedPatients: Gagal (${response.statusCode}): $message",
+        );
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      developer.log("PatientRepository - searchConnectedPatients Error: $e");
+      developer.log(
+        "PatientRepository - searchConnectedPatients Stacktrace: $stackTrace",
+      );
+      return const Left(
+        "Terjadi kesalahan saat mencari pasien terhubung. Cek koneksi atau backend.",
+      );
+    }
+  }
 }
