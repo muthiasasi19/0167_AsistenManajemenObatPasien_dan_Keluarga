@@ -25,4 +25,43 @@ class FamilyRepository {
     }
     return null;
   }
+
+  /// @desc Keluarga menghubungkan diri dengan pasien menggunakan kode unik pasien (id_pasien VARCHAR)
+  /// @route POST /api/family/connect-to-patient
+  Future<Either<String, String>> connectPatientToFamily(
+    FamilyConnectRequestModel request,
+  ) async {
+    try {
+      log(
+        "FamilyRepository: Mengirim request koneksi keluarga ke pasien: ${request.patientUniqueId}",
+      );
+      final response = await _httpClient.postWithToken(
+        'family/connect-to-patient',
+        request.toMap(),
+      );
+
+      log(
+        "FamilyRepository - connectPatientToFamily: Status Code: ${response.statusCode}",
+      );
+      log("FamilyRepository - connectPatientToFamily: Body: ${response.body}");
+
+      final responseBody = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        final message = responseBody['message'];
+        log("FamilyRepository - connectPatientToFamily: Berhasil: $message");
+        return Right(message);
+      } else {
+        final message =
+            responseBody['message'] ?? 'Gagal menghubungkan pasien.';
+        log(
+          "FamilyRepository - connectPatientToFamily: Gagal (${response.statusCode}): $message",
+        );
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      log("FamilyRepository - connectPatientToFamily Error: $e\n$stackTrace");
+      return Left("Terjadi kesalahan saat menghubungkan pasien.");
+    }
+  }
 }
