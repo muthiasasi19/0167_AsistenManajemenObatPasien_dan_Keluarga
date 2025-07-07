@@ -107,4 +107,48 @@ class FamilyRepository {
       return Left("Terjadi kesalahan saat memuat obat pasien.");
     }
   }
+
+  Future<Either<String, List<MedicationHistoryData>>>
+  getPatientMedicationHistoryForFamily(int patientGlobalId) async {
+    try {
+      final familyGlobalId = await _getFamilyGlobalIdFromLocalStorage();
+      if (familyGlobalId == null) {
+        return const Left("ID Keluarga tidak ditemukan. Mohon login ulang.");
+      }
+      log(
+        "FamilyRepository: Mengambil riwayat konsumsi pasien ID: $patientGlobalId untuk keluarga ID: $familyGlobalId",
+      );
+
+      final response = await _httpClient.get(
+        'family/patients/$patientGlobalId/medication-history',
+      );
+
+      log(
+        "FamilyRepository - getPatientMedicationHistoryForFamily: Status Code: ${response.statusCode}",
+      );
+      log(
+        "FamilyRepository - getPatientMedicationHistoryForFamily: Body: ${response.body}",
+      );
+
+      if (response.statusCode == 200) {
+        final responseModel = MedicationHistoryResponseModel.fromJson(
+          response.body,
+        );
+        return Right(responseModel.data);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message =
+            errorBody['message'] ??
+            'Gagal memuat riwayat konsumsi obat pasien.';
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      log(
+        "FamilyRepository - getPatientMedicationHistoryForFamily Error: $e\n$stackTrace",
+      );
+      return Left(
+        "Terjadi kesalahan saat memuat riwayat konsumsi obat pasien.",
+      );
+    }
+  }
 }
