@@ -12,4 +12,13 @@ class PatientRepository {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   PatientRepository(this._httpClient);
+
+  Future<String?> _getDoctorIdFromLocalStorage() async {
+    final userDataString = await _secureStorage.read(key: 'userData');
+    if (userDataString != null) {
+      final userData = jsonDecode(userDataString);
+      return userData['id_dokter']?.toString();
+    }
+    return null;
+  }
 }
