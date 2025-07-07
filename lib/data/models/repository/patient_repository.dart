@@ -74,4 +74,45 @@ class PatientRepository {
       return const Left("Terjadi kesalahan saat memuat dokter terhubung.");
     }
   }
+
+  Future<Either<String, PatientsListResponseModel>> getPatients() async {
+    try {
+      final doctorId = await _getDoctorIdFromLocalStorage();
+      if (doctorId == null) {
+        developer.log(
+          "PatientRepository: Gagal getPatients, ID Dokter tidak ditemukan.",
+        );
+        return const Left("ID Dokter tidak ditemukan. Mohon login ulang.");
+      }
+      developer.log(
+        "PatientRepository: Mengambil daftar pasien untuk dokter ID: $doctorId",
+      );
+      final response = await _httpClient.get(
+        'doctor/patients?doctorId=$doctorId',
+      );
+
+      developer.log(
+        "PatientRepository - getPatients: Status Code: ${response.statusCode}",
+      );
+      developer.log("PatientRepository - getPatients: Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseModel = PatientsListResponseModel.fromJson(response.body);
+        developer.log(
+          "PatientRepository - getPatients: Berhasil, ${responseModel.data.length} pasien dimuat.",
+        );
+        return Right(responseModel);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['message'] ?? 'Gagal memuat daftar pasien.';
+        developer.log(
+          "PatientRepository - getPatients: Gagal (${response.statusCode}): $message",
+        );
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      developer.log("PatientRepository - getPatients Error: $e\n$stackTrace");
+      return const Left("Terjadi kesalahan saat memuat daftar pasien.");
+    }
+  }
 }
