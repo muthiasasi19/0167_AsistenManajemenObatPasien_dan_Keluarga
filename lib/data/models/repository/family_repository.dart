@@ -64,4 +64,47 @@ class FamilyRepository {
       return Left("Terjadi kesalahan saat menghubungkan pasien.");
     }
   }
+
+  /// @desc Mendapatkan daftar obat untuk pasien tertentu yang terhubung (oleh keluarga)
+  /// @route GET /api/family/patients/:patientGlobalId/medications
+  Future<Either<String, List<Medication>>> getPatientMedicationsForFamily(
+    int patientGlobalId,
+  ) async {
+    try {
+      final familyGlobalId = await _getFamilyGlobalIdFromLocalStorage();
+      if (familyGlobalId == null) {
+        return const Left("ID Keluarga tidak ditemukan. Mohon login ulang.");
+      }
+      log(
+        "FamilyRepository: Mengambil obat pasien ID: $patientGlobalId untuk keluarga ID: $familyGlobalId",
+      );
+
+      final response = await _httpClient.get(
+        'family/patients/$patientGlobalId/medications',
+      );
+
+      log(
+        "FamilyRepository - getPatientMedicationsForFamily: Status Code: ${response.statusCode}",
+      );
+      log(
+        "FamilyRepository - getPatientMedicationsForFamily: Body: ${response.body}",
+      );
+
+      if (response.statusCode == 200) {
+        final responseModel = MedicationsListResponseModel.fromJson(
+          response.body,
+        );
+        return Right(responseModel.data);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['message'] ?? 'Gagal memuat obat pasien.';
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      log(
+        "FamilyRepository - getPatientMedicationsForFamily Error: $e\n$stackTrace",
+      );
+      return Left("Terjadi kesalahan saat memuat obat pasien.");
+    }
+  }
 }
