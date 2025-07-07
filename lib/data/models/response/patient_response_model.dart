@@ -72,3 +72,52 @@ class Patient {
     "doctorId": connectedDoctorId,
   };
 }
+
+// Model untuk respons yang berisi daftar pasien
+class PatientsListResponseModel {
+  final String? message;
+  final List<Patient> data; // List pasien
+
+  PatientsListResponseModel({this.message, required this.data});
+
+  factory PatientsListResponseModel.fromJson(String str) =>
+      PatientsListResponseModel.fromMap(json.decode(str));
+
+  String toJson() => json.encode(toMap());
+
+  factory PatientsListResponseModel.fromMap(Map<String, dynamic> json) =>
+      PatientsListResponseModel(
+        message: json["message"],
+        data:
+            (json["data"] as List<dynamic>?)
+                ?.map((x) => Patient.fromMap(x as Map<String, dynamic>))
+                .toList() ??
+            [],
+      );
+
+  Map<String, dynamic> toMap() => {
+    "message": message,
+    "data": List<dynamic>.from(data.map((x) => x.toMap())),
+  };
+}
+
+// Model untuk respons saat berhasil menambahkan/mengoneksikan satu pasien
+class SinglePatientResponseModel {
+  final String? message;
+  final Patient? data; // Data satu pasien yang baru dikoneksikan
+
+  SinglePatientResponseModel({this.message, this.data});
+
+  factory SinglePatientResponseModel.fromJson(String str) =>
+      SinglePatientResponseModel.fromMap(json.decode(str));
+
+  String toJson() => json.encode(toMap());
+
+  factory SinglePatientResponseModel.fromMap(Map<String, dynamic> json) =>
+      SinglePatientResponseModel(
+        message: json["message"],
+        data: json["data"] == null ? null : Patient.fromMap(json["data"]),
+      );
+
+  Map<String, dynamic> toMap() => {"message": message, "data": data?.toMap()};
+}
