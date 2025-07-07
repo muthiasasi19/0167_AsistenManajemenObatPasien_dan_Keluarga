@@ -115,4 +115,54 @@ class PatientRepository {
       return const Left("Terjadi kesalahan saat memuat daftar pasien.");
     }
   }
+
+  Future<Either<String, SinglePatientResponseModel>> connectPatient(
+    String patientUniqueId,
+  ) async {
+    try {
+      final doctorId = await _getDoctorIdFromLocalStorage();
+      if (doctorId == null) {
+        developer.log(
+          "PatientRepository: Gagal connectPatient, ID Dokter tidak ditemukan.",
+        );
+        return const Left("ID Dokter tidak ditemukan. Mohon login ulang.");
+      }
+      developer.log(
+        "PatientRepository: Menghubungkan pasien: $patientUniqueId dengan dokter: $doctorId",
+      );
+      final response = await _httpClient.postWithToken(
+        'doctor/connect-patient',
+        {'patientUniqueId': patientUniqueId, 'doctorId': doctorId},
+      );
+
+      developer.log(
+        "PatientRepository - connectPatient: Status Code: ${response.statusCode}",
+      );
+      developer.log(
+        "PatientRepository - connectPatient: Body: ${response.body}",
+      );
+
+      if (response.statusCode == 201) {
+        final responseModel = SinglePatientResponseModel.fromJson(
+          response.body,
+        );
+        developer.log(
+          "PatientRepository - connectPatient: Berhasil, ${responseModel.message}",
+        );
+        return Right(responseModel);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['message'] ?? 'Gagal menghubungkan pasien.';
+        developer.log(
+          "PatientRepository - connectPatient: Gagal (${response.statusCode}): $message",
+        );
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        "PatientRepository - connectPatient Error: $e\n$stackTrace",
+      );
+      return const Left("Terjadi kesalahan saat menghubungkan pasien.");
+    }
+  }
 }
