@@ -17,4 +17,12 @@ class FamilyRepository {
   FamilyRepository(this._httpClient);
 
   // Helper untuk mendapatkan ID internal keluarga dari local storage
+  Future<int?> _getFamilyGlobalIdFromLocalStorage() async {
+    final userDataString = await _secureStorage.read(key: 'userData');
+    if (userDataString != null) {
+      final userData = jsonDecode(userDataString);
+      return userData['familyGlobalId'] as int?;
+    }
+    return null;
+  }
 }
