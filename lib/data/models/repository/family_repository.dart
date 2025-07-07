@@ -151,4 +151,56 @@ class FamilyRepository {
       );
     }
   }
+
+  /// @desc Mendapatkan lokasi terakhir pasien yang terhubung (oleh keluarga)
+  /// @route GET /api/family/patients/:patientGlobalId/location
+  Future<Either<String, PatientLocationData>> getPatientLastLocationForFamily(
+    int patientGlobalId,
+  ) async {
+    try {
+      final familyGlobalId = await _getFamilyGlobalIdFromLocalStorage();
+      if (familyGlobalId == null) {
+        return const Left("ID Keluarga tidak ditemukan. Mohon login ulang.");
+      }
+      log(
+        "FamilyRepository: Mengambil lokasi pasien ID: $patientGlobalId untuk keluarga ID: $familyGlobalId",
+      );
+
+      final response = await _httpClient.get(
+        'family/patients/$patientGlobalId/location',
+      );
+
+      log(
+        "FamilyRepository - getPatientLastLocationForFamily: Status Code: ${response.statusCode}",
+      );
+      log(
+        "FamilyRepository - getPatientLastLocationForFamily: Body: ${response.body}",
+      );
+
+      if (response.statusCode == 200) {
+        final responseModel = PatientLocationResponseModel.fromJson(
+          response.body,
+        );
+        if (responseModel.data != null) {
+          return Right(responseModel.data!);
+        } else {
+          return Left(responseModel.message ?? 'Lokasi pasien belum tersedia.');
+        }
+      } else if (response.statusCode == 404) {
+        // Menangani 404 khusus untuk "Lokasi belum tersedia"
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['message'] ?? 'Lokasi pasien belum tersedia.';
+        return Left(message);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['message'] ?? 'Gagal memuat lokasi pasien.';
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      log(
+        "FamilyRepository - getPatientLastLocationForFamily Error: $e\n$stackTrace",
+      );
+      return Left("Terjadi kesalahan saat memuat lokasi pasien.");
+    }
+  }
 }
