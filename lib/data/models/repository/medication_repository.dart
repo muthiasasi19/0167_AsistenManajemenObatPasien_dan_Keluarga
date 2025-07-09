@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:dartz/dartz.dart';
-import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:manajemen_obat/service/service_http_client.dart';
 import 'package:manajemen_obat/data/models/request/medication/add_medication_request_model.dart';
