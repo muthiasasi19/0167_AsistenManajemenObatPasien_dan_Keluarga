@@ -922,4 +922,302 @@ class _MedicationPageState extends State<MedicationPage> {
       },
     );
   }
+
+  Future<void> _showAddEditMedicationDialog(
+    BuildContext context, {
+    Medication? medication,
+  }) async {
+    final TextEditingController nameController = TextEditingController(
+      text: medication?.medicationName,
+    );
+    final TextEditingController dosageController = TextEditingController(
+      text: medication?.dosage,
+    );
+    final TextEditingController descriptionController = TextEditingController(
+      text: medication?.description,
+    );
+    final TextEditingController photoUrlController = TextEditingController(
+      text: medication?.photoUrl,
+    );
+
+    // Inisialisasi state dialog untuk edit mode
+    if (medication != null) {
+      _selectedFrequencyType = medication.schedule.type;
+      _selectedTimes =
+          medication.schedule.times?.map((timeStr) {
+            final parts = timeStr.split(':');
+            return TimeOfDay(
+              hour: int.parse(parts[0]),
+              minute: int.parse(parts[1]),
+            );
+          }).toList() ??
+          [];
+      _instructionsController.text = medication.schedule.notes ?? '';
+    } else {
+      _selectedFrequencyType = null;
+      _selectedTimes = [];
+      _instructionsController.clear();
+    }
+
+    final _dialogFormKey = GlobalKey<FormState>();
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setDialogState) {
+            Future<void> _pickTime() async {
+              final TimeOfDay? picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay.now(),
+              );
+              if (picked != null) {
+                setDialogState(() {
+                  if (!_selectedTimes.contains(picked)) {
+                    _selectedTimes.add(picked);
+                    _selectedTimes.sort(
+                      (a, b) =>
+                          (a.hour * 60 + a.minute) - (b.hour * 60 + b.minute),
+                    );
+                  }
+                });
+              }
+            }
+
+            // Fungsi untuk membuat string TimeOfDay
+            String _formatTimeOfDay(TimeOfDay tod) {
+              final now = DateTime.now();
+              final dt = DateTime(
+                now.year,
+                now.month,
+                now.day,
+                tod.hour,
+                tod.minute,
+              );
+              return DateFormat.Hm().format(dt);
+            }
+
+            return AlertDialog(
+              title: Text(
+                medication == null ? 'Tambah Obat Baru' : 'Edit Obat',
+              ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: _dialogFormKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        decoration: _inputDecoration('Nama Obat'),
+                        validator:
+                            (value) =>
+                                value!.isEmpty ? 'Nama obat wajib diisi' : null,
+                      ),
+                      const SpaceHeight(16),
+                      TextFormField(
+                        controller: dosageController,
+                        decoration: _inputDecoration('Dosis'),
+                        validator:
+                            (value) =>
+                                value!.isEmpty ? 'Dosis wajib diisi' : null,
+                      ),
+                      const SpaceHeight(16),
+                      // Dropdown
+                      DropdownButtonFormField<String>(
+                        decoration: _inputDecoration('Frekuensi Konsumsi'),
+                        value: _selectedFrequencyType,
+                        hint: const Text('Pilih frekuensi'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'daily_fixed_times_1',
+                            child: Text('1x sehari'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'daily_fixed_times_2',
+                            child: Text('2x sehari'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'daily_fixed_times_3',
+                            child: Text('3x sehari'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'daily_fixed_times_4',
+                            child: Text('4x sehari'),
+                          ),
+                        ],
+                        onChanged: (String? newValue) {
+                          setDialogState(() {
+                            _selectedFrequencyType = newValue;
+                            _selectedTimes = [];
+                            _instructionsController.clear();
+                          });
+                        },
+                        validator:
+                            (value) =>
+                                value == null
+                                    ? 'Frekuensi konsumsi wajib diisi'
+                                    : null,
+                      ),
+                      const SpaceHeight(16),
+
+                      if (_selectedFrequencyType != null)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pilih Waktu Konsumsi:',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SpaceHeight(8),
+                            Wrap(
+                              spacing: 8.0,
+                              runSpacing: 4.0,
+                              children:
+                                  _selectedTimes.map((time) {
+                                    return Chip(
+                                      label: Text(_formatTimeOfDay(time)),
+                                      onDeleted: () {
+                                        setDialogState(() {
+                                          _selectedTimes.remove(time);
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                            ),
+                            const SpaceHeight(8),
+                            ElevatedButton.icon(
+                              onPressed: _pickTime,
+                              icon: const Icon(Icons.access_time),
+                              label: const Text('Tambah Waktu'),
+                            ),
+                            const SpaceHeight(16),
+                          ],
+                        ),
+
+                      TextFormField(
+                        controller: descriptionController,
+                        decoration: _inputDecoration('Deskripsi (Opsional)'),
+                        maxLines: 3,
+                      ),
+                      const SpaceHeight(16),
+                      TextFormField(
+                        controller: photoUrlController,
+                        decoration: _inputDecoration(
+                          'URL Foto Obat (Opsional)',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_dialogFormKey.currentState!.validate()) {
+                      if (_selectedFrequencyType != null &&
+                          _selectedFrequencyType!.startsWith(
+                            'daily_fixed_times_',
+                          ) &&
+                          _selectedTimes.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Waktu konsumsi wajib diisi untuk frekuensi ini!',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Konstruksi objek MedicationSchedule
+                      final String finalScheduleType;
+                      if (_selectedFrequencyType!.startsWith(
+                        'daily_fixed_times_',
+                      )) {
+                        finalScheduleType = 'daily_fixed_times';
+                      } else {
+                        finalScheduleType = _selectedFrequencyType!;
+                      }
+
+                      final MedicationSchedule newMedicationSchedule =
+                          MedicationSchedule(
+                            type: finalScheduleType,
+                            times:
+                                _selectedTimes
+                                    .map((e) => _formatTimeOfDay(e))
+                                    .toList(),
+                            daysOfWeek: null,
+                            notes:
+                                _instructionsController.text.trim().isEmpty
+                                    ? null
+                                    : _instructionsController.text.trim(),
+                          );
+
+                      if (medication == null) {
+                        if (_currentSelectedPatientUniqueId == null ||
+                            _currentSelectedPatientUniqueId!.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Silakan pilih pasien terlebih dahulu sebelum menambah obat.',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        context.read<MedicationBloc>().add(
+                          AddMedicationRequested(
+                            patientUniqueId: _currentSelectedPatientUniqueId!,
+                            request: AddMedicationRequestModel(
+                              medicationName: nameController.text.trim(),
+                              dosage: dosageController.text.trim(),
+                              schedule: newMedicationSchedule,
+                              description:
+                                  descriptionController.text.trim().isEmpty
+                                      ? null
+                                      : descriptionController.text.trim(),
+                              photoUrl:
+                                  photoUrlController.text.trim().isEmpty
+                                      ? null
+                                      : photoUrlController.text.trim(),
+                            ),
+                          ),
+                        );
+                      } else {
+                        context.read<MedicationBloc>().add(
+                          UpdateMedicationRequested(
+                            medicationId: medication.id,
+                            request: UpdateMedicationRequestModel(
+                              medicationName: nameController.text.trim(),
+                              dosage: dosageController.text.trim(),
+                              schedule: newMedicationSchedule,
+                              description:
+                                  descriptionController.text.trim().isEmpty
+                                      ? null
+                                      : descriptionController.text.trim(),
+                              photoUrl:
+                                  photoUrlController.text.trim().isEmpty
+                                      ? null
+                                      : photoUrlController.text.trim(),
+                            ),
+                          ),
+                        );
+                      }
+                      Navigator.pop(dialogContext);
+                    }
+                  },
+                  child: Text(medication == null ? 'Tambah' : 'Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
