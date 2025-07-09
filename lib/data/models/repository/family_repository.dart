@@ -80,7 +80,7 @@ class FamilyRepository {
 
       // Asumsi endpoint untuk mendapatkan daftar pasien terhubung adalah 'family/connected-patients'
       final response = await _httpClient.get(
-        'family/connected-patients', // <-- Sesuaikan dengan endpoint API Anda
+        'family/my-connected-patients', // <-- Sesuaikan dengan endpoint API Anda
       );
 
       log(
@@ -96,7 +96,11 @@ class FamilyRepository {
         final List<dynamic> patientListJson = responseBody['data'] ?? [];
         final List<FamilyConnectedPatientData> patients =
             patientListJson
-                .map((json) => FamilyConnectedPatientData.fromJson(json))
+                .map(
+                  (json) => FamilyConnectedPatientData.fromMap(
+                    json as Map<String, dynamic>,
+                  ),
+                )
                 .toList();
         return Right(patients);
       } else {

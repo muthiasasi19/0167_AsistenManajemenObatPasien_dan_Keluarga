@@ -104,7 +104,7 @@ class MedicationHistoryData {
           json["medicationName"] as String? ?? json["nama_obat"] as String?,
       dosage: json["dosage"] as String? ?? json["dosis"] as String?,
       schedule: parsedSchedule,
-      scheduledTime: json["scheduled_time"] as String?,
+      scheduledTime: json["scheduledTime"] as String?,
     );
   }
 

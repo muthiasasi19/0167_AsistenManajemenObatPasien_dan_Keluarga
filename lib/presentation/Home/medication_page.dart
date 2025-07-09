@@ -793,26 +793,66 @@ class _MedicationPageState extends State<MedicationPage> {
                 String formattedConsumptionTime =
                     sessionItem.consumptionTime != null
                         ? DateFormat(
-                          'dd MMMM yyyy, HH:mm',
-                        ).format(DateTime.parse(sessionItem.consumptionTime!))
+                          'dd MMMM, HH:mm', // Format tanggal dan waktu
+                        ).format(
+                          DateTime.parse(
+                            sessionItem.consumptionTime!,
+                          ).toLocal(),
+                        )
                         : 'Tidak Diketahui';
+                // --- LOG INSPEKSI BARU ---
+                developer.log(
+                  'DEBUG: sessionItem.medicationName: ${sessionItem.medicationName}',
+                );
+                developer.log(
+                  'DEBUG: sessionItem.scheduledTime: "${sessionItem.scheduledTime}" (length: ${sessionItem.scheduledTime?.length ?? 0}, isNotEmpty: ${sessionItem.scheduledTime?.isNotEmpty})',
+                );
+                developer.log(
+                  'DEBUG: sessionItem.schedule?.times: ${sessionItem.schedule?.times} (length: ${sessionItem.schedule?.times?.length ?? 0})',
+                );
+                // --- AKHIR LOG INSPEKSI ---
 
-                String sessionTimeDisplay = '';
+                String detailScheduledTime;
+                // Jika scheduledTime spesifik tersedia dan tidak kosong, gunakan itu
                 if (sessionItem.scheduledTime != null &&
-                    sessionItem.scheduledTime!.isNotEmpty) {
-                  sessionTimeDisplay =
-                      'Waktu Jadwal: ${sessionItem.scheduledTime}';
-                } else if (sessionItem.schedule?.type == 'daily_fixed_times' &&
-                    sessionItem.schedule!.times != null &&
+                    sessionItem.scheduledTime!.trim().isNotEmpty) {
+                  detailScheduledTime = sessionItem.scheduledTime!.trim();
+                  developer.log(
+                    'DEBUG: Menggunakan scheduledTime: $detailScheduledTime',
+                  );
+                }
+                // Jika scheduledTime tidak tersedia/kosong TAPI ada times di schedule dan hanya ada SATU waktu, gunakan itu
+                else if (sessionItem.schedule?.times != null &&
+                    sessionItem.schedule!.times!.length == 1 &&
+                    sessionItem.schedule!.times!.first.trim().isNotEmpty) {
+                  detailScheduledTime =
+                      sessionItem.schedule!.times!.first.trim();
+                  developer.log(
+                    'DEBUG: Menggunakan schedule.times (satu waktu): $detailScheduledTime',
+                  );
+                }
+                // Jika ada banyak waktu di schedule atau scheduledTime tidak spesifik, tampilkan semua (fallback)
+                else if (sessionItem.schedule?.times != null &&
                     sessionItem.schedule!.times!.isNotEmpty) {
-                  ;
-                } else {
-                  sessionTimeDisplay =
-                      'Tidak Terjadwal / Jadwal Tidak Diketahui';
+                  detailScheduledTime = sessionItem.schedule!.times!.join(', ');
+                  developer.log(
+                    'DEBUG: Menggunakan schedule.times (banyak waktu): $detailScheduledTime',
+                  );
+                }
+                // Jika tidak ada informasi waktu jadwal sama sekali
+                else {
+                  detailScheduledTime = 'Tidak Tersedia';
+                  developer.log('DEBUG: Menggunakan "Tidak Tersedia"');
                 }
 
-                String sessionDetails =
-                    '$sessionTimeDisplay Status: ${sessionItem.status == 'taken' ? 'Diminum' : sessionItem.status ?? 'Tidak Diketahui'}';
+                String statusDisplay =
+                    sessionItem.status == 'taken'
+                        ? 'Diminum'
+                        : sessionItem.status ?? 'Tidak Diketahui';
+
+                String sessionDetails = 'Status: $statusDisplay';
+                sessionDetails += '\nWaktu Jadwal: $detailScheduledTime';
+
                 if (sessionItem.notes != null &&
                     sessionItem.notes!.isNotEmpty) {
                   sessionDetails += '\nCatatan: ${sessionItem.notes}';
