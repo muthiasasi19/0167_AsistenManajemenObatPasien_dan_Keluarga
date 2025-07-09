@@ -25,6 +25,6 @@ class ConnectPatientRequested extends FamilyEvent {
   const ConnectPatientRequested({
     required this.patientUniqueId,
     this.familyId,
-    this.familyGlobalId,
+    final int? familyGlobalId,
   });
 }
