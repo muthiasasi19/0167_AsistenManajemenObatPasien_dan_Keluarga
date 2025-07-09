@@ -666,4 +666,86 @@ class _MedicationPageState extends State<MedicationPage> {
               : null,
     );
   }
+
+  // Fungsi untuk menampilkan daftar obat untuk role Dokter
+  Widget _buildMedicationsListForDoctor(List<Medication> medications) {
+    if (medications.isEmpty) {
+      return const Center(
+        child: Text('Belum ada obat yang ditambahkan untuk pasien ini.'),
+      );
+    }
+    return ListView.builder(
+      itemCount: medications.length,
+      itemBuilder: (context, index) {
+        final medication = medications[index];
+        developer.log(
+          '[MedicationPage:_buildMedicationsListForDoctor] Rendering: Name="${medication.medicationName}", Dosage="${medication.dosage}", Schedule="${medication.schedule.displayString}"',
+        );
+
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          elevation: 2.0,
+          child: ListTile(
+            title: Text(
+              medication.medicationName.isNotEmpty
+                  ? medication.medicationName
+                  : 'Nama Obat Tidak Diketahui',
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dosis: ${medication.dosage.isNotEmpty ? medication.dosage : 'Tidak Diketahui'}',
+                ),
+                Text(
+                  'Jadwal: ${medication.schedule.displayString.isNotEmpty ? medication.schedule.displayString : 'Tidak Diketahui'}',
+                ),
+                if (medication.description != null &&
+                    medication.description!.isNotEmpty)
+                  Text('Deskripsi: ${medication.description}'),
+                if (medication.photoUrl != null &&
+                    medication.photoUrl!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Image.network(
+                      medication.photoUrl!,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) =>
+                              const Icon(Icons.broken_image),
+                    ),
+                  ),
+              ],
+            ),
+            trailing:
+                widget.isHistory
+                    ? null
+                    : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed:
+                              () => _showAddEditMedicationDialog(
+                                context,
+                                medication: medication,
+                              ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed:
+                              () => _confirmDeleteMedication(
+                                context,
+                                medication.id,
+                              ),
+                        ),
+                      ],
+                    ),
+          ),
+        );
+      },
+    );
+  }
 }
