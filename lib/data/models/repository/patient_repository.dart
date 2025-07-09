@@ -22,7 +22,7 @@ class PatientRepository {
     return null;
   }
 
-  // Mendapatkan Dokter Terhubung untuk Pasien ---
+  // Mendapatkan Dokter Terhubung untuk Pasien
   Future<Either<String, DoctorData>> getConnectedDoctor(
     String patientUniqueId,
   ) async {
@@ -43,8 +43,7 @@ class PatientRepository {
 
       if (response.statusCode == 200) {
         final responseBody = jsonDecode(response.body);
-        final dynamic data =
-            responseBody['data']; // Bisa null kalau tidak ada dokter terhubung
+        final dynamic data = responseBody['data'];
 
         if (data != null) {
           final doctor = DoctorData.fromJson(data);
