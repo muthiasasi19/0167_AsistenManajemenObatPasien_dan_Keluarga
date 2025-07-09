@@ -8,6 +8,10 @@ class ServiceHttpClient {
       'http://127.0.0.1:3000/api/'; // Ganti sesuai IP dan port. Kalau di Chrome, 127.0.0.1 . Kalau Android Emulator, coba 'http://10.0.2.2:3000/api/'
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
+  Future<String?> getToken() async {
+    return await secureStorage.read(key: 'authToken');
+  }
+
   // Helper untuk mendapatkan headers
   Future<Map<String, String>> _getHeaders(String? token) async {
     return {

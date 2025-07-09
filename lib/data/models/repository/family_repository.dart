@@ -65,6 +65,54 @@ class FamilyRepository {
     }
   }
 
+  /// @desc Mendapatkan daftar pasien yang terhubung dengan keluarga
+  /// @route GET /api/family/connected-patients (Asumsi endpoint ini ada)
+  Future<Either<String, List<FamilyConnectedPatientData>>>
+  getConnectedPatientsForFamily() async {
+    try {
+      final familyGlobalId = await _getFamilyGlobalIdFromLocalStorage();
+      if (familyGlobalId == null) {
+        return const Left("ID Keluarga tidak ditemukan. Mohon login ulang.");
+      }
+      log(
+        "FamilyRepository: Mengambil daftar pasien terhubung untuk keluarga ID: $familyGlobalId",
+      );
+
+      // Asumsi endpoint untuk mendapatkan daftar pasien terhubung adalah 'family/connected-patients'
+      final response = await _httpClient.get(
+        'family/connected-patients', // <-- Sesuaikan dengan endpoint API Anda
+      );
+
+      log(
+        "FamilyRepository - getConnectedPatientsForFamily: Status Code: ${response.statusCode}",
+      );
+      log(
+        "FamilyRepository - getConnectedPatientsForFamily: Body: ${response.body}",
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        // Asumsi responsnya adalah List of Maps di bawah kunci 'data'
+        final List<dynamic> patientListJson = responseBody['data'] ?? [];
+        final List<FamilyConnectedPatientData> patients =
+            patientListJson
+                .map((json) => FamilyConnectedPatientData.fromJson(json))
+                .toList();
+        return Right(patients);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message =
+            errorBody['message'] ?? 'Gagal memuat daftar pasien terhubung.';
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      log(
+        "FamilyRepository - getConnectedPatientsForFamily Error: $e\n$stackTrace",
+      );
+      return Left("Terjadi kesalahan saat memuat daftar pasien terhubung.");
+    }
+  }
+
   /// @desc Mendapatkan daftar obat untuk pasien tertentu yang terhubung (oleh keluarga)
   /// @route GET /api/family/patients/:patientGlobalId/medications
   Future<Either<String, List<Medication>>> getPatientMedicationsForFamily(
