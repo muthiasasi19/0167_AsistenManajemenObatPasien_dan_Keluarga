@@ -73,6 +73,142 @@ class MedicationSchedule {
   }
 }
 
+// Model untuk satu objek Obat
+class Medication {
+  final int id;
+  final int patientId;
+  final int? doctorId;
+  final String medicationName;
+  final String dosage;
+  final MedicationSchedule schedule; // <--- Tetap MedicationSchedule
+  final String? description;
+  final String? photoUrl;
+  final String? createdAt;
+  final String? updatedAt;
+  final String? status;
+  final bool? isTaken;
+  final String? consumptionTime;
+  final String? consumptionNotes;
+  final String? scheduledTime;
+
+  Medication({
+    required this.id,
+    required this.patientId,
+    this.doctorId,
+    required this.medicationName,
+    required this.dosage,
+    required this.schedule,
+    this.description,
+    this.photoUrl,
+    this.createdAt,
+    this.updatedAt,
+    this.status,
+    this.isTaken,
+    this.consumptionTime,
+    this.consumptionNotes,
+    this.scheduledTime,
+  });
+
+  factory Medication.fromJson(String str) =>
+      Medication.fromMap(json.decode(str));
+
+  String toJson() => json.encode(toMap());
+
+  factory Medication.fromMap(Map<String, dynamic> json) {
+    developer.log('[Medication.fromMap] Raw JSON: $json');
+
+    final int id = int.tryParse(json["id"]?.toString() ?? '0') ?? 0;
+    final int patientId =
+        int.tryParse(json["patientId"]?.toString() ?? '0') ?? 0;
+    final int? doctorId = int.tryParse(json["doctorId"]?.toString() ?? '');
+
+    final String medicationName = json["medicationName"] as String? ?? '';
+    final String dosage = json["dosage"] as String? ?? '';
+
+    MedicationSchedule parsedSchedule;
+    final dynamic rawSchedule = json["schedule"];
+
+    if (rawSchedule is Map<String, dynamic>) {
+      parsedSchedule = MedicationSchedule.fromMap(rawSchedule);
+    } else if (rawSchedule is String) {
+      try {
+        final decodedSchedule = jsonDecode(rawSchedule);
+        if (decodedSchedule is Map<String, dynamic>) {
+          parsedSchedule = MedicationSchedule.fromMap(decodedSchedule);
+        } else {
+          parsedSchedule = MedicationSchedule(
+            type: 'unknown',
+            notes: rawSchedule,
+          );
+        }
+      } catch (e) {
+        developer.log('Error decoding schedule string to JSON: $e');
+        parsedSchedule = MedicationSchedule(
+          type: 'unknown',
+          notes: rawSchedule,
+        );
+      }
+    } else {
+      parsedSchedule = MedicationSchedule(
+        type: 'unknown',
+        notes: 'Invalid schedule format',
+      );
+    }
+
+    final String? description = json["description"] as String?;
+    final String? photoUrl = json["photoUrl"] as String?;
+    final String? createdAt = json["createdAt"] as String?;
+    final String? updatedAt = json["updatedAt"] as String?;
+    final bool? isTaken = json["isTaken"] as bool?;
+    final String? consumptionTime = json["consumptionTime"] as String?;
+    final String? consumptionNotes = json["consumptionNotes"] as String?;
+    final String? status = json["status"] as String?;
+    final String? scheduledTime = json["scheduledTime"] as String?;
+
+    final Medication medication = Medication(
+      id: id,
+      patientId: patientId,
+      doctorId: doctorId,
+      medicationName: medicationName,
+      dosage: dosage,
+      schedule: parsedSchedule,
+      description: description,
+      photoUrl: photoUrl,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      status: status,
+      isTaken: isTaken,
+      consumptionTime: consumptionTime,
+      consumptionNotes: consumptionNotes,
+      scheduledTime: scheduledTime,
+    );
+
+    developer.log(
+      '[Medication.fromMap] Parsed Medication: ${medication.medicationName}, ${medication.dosage}, ${medication.schedule.displayString}',
+    );
+
+    return medication;
+  }
+
+  Map<String, dynamic> toMap() => {
+    "id": id,
+    "patientId": patientId,
+    "doctorId": doctorId,
+    "medicationName": medicationName,
+    "dosage": dosage,
+    "schedule": schedule.toMap(),
+    "description": description,
+    "photoUrl": photoUrl,
+    "createdAt": createdAt,
+    "updatedAt": updatedAt,
+    "status": status,
+    "isTaken": isTaken,
+    "consumptionTime": consumptionTime,
+    "consumptionNotes": consumptionNotes,
+    "scheduledTime": scheduledTime,
+  };
+}
+
 class MedicationsListResponseModel {
   final String? message;
   final List<Medication> data;
