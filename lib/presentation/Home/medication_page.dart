@@ -277,4 +277,393 @@ class _MedicationPageState extends State<MedicationPage> {
   void _clearMedicationsAndShowMessage() {
     context.read<MedicationBloc>().add(MedicationClearRequested());
   }
+
+  @override
+  Widget build(BuildContext context) {
+    String appBarTitle =
+        widget.isHistory
+            ? 'Riwayat Konsumsi Obat'
+            : widget.isPatientRole
+            ? 'Jadwal Obat Anda'
+            : widget.isFamilyRole
+            ? 'Obat ${_currentSelectedPatientName ?? 'Pasien'}'
+            : 'Manajemen Obat Pasien';
+
+    String dynamicAppBarTitle = appBarTitle;
+    if (widget.initialPatientUniqueId != null &&
+        _currentSelectedPatientName != null) {
+      dynamicAppBarTitle = 'Manajemen Obat ${_currentSelectedPatientName}';
+    } else if (widget.initialPatientUniqueId != null &&
+        _currentSelectedPatientName == null &&
+        _currentUserData?.role?.toLowerCase() == 'dokter') {
+      dynamicAppBarTitle =
+          'Manajemen Obat ${widget.initialPatientName ?? 'Pasien'}';
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(dynamicAppBarTitle),
+        leading:
+            (widget.patientGlobalId != null ||
+                        widget.initialPatientUniqueId != null) &&
+                    !widget.isPatientRole
+                ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                )
+                : null,
+      ),
+      body: Column(
+        children: [
+          if (_currentUserData?.role?.toLowerCase() == 'dokter' &&
+              _currentSelectedPatientUniqueId == null &&
+              widget.initialPatientUniqueId == null)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _currentSelectedPatientName != null &&
+                            _currentSelectedPatientUniqueId != null
+                        ? 'Pasien Terpilih: ${_currentSelectedPatientName!} (ID: ${_currentSelectedPatientUniqueId!})'
+                        : 'Silakan cari dan pilih pasien untuk mengelola obat.',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SpaceHeight(10),
+                  BlocConsumer<PatientBloc, PatientState>(
+                    listener: (context, state) {
+                      if (state is ConnectedPatientsSearchLoaded) {
+                        developer.log(
+                          'MedicationPage: ConnectedPatientsSearchLoaded - ${state.searchResults.length} hasil.',
+                        );
+                        setState(() {
+                          _patientSearchResults = state.searchResults;
+                        });
+                      } else if (state is ConnectedPatientsSearchError) {
+                        developer.log(
+                          'MedicationPage: ConnectedPatientsSearchError - ${state.message}',
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Pencarian Pasien Error: ${state.message}',
+                            ),
+                          ),
+                        );
+                        setState(() {
+                          _patientSearchResults = [];
+                        });
+                      } else if (state is PatientLoading) {
+                        developer.log(
+                          'MedicationPage: PatientBloc is Loading...',
+                        );
+                      }
+                    },
+                    builder: (context, state) {
+                      bool isLoadingSearch = state is PatientLoading;
+                      return Autocomplete<PatientSearchResult>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          developer.log(
+                            'MedicationPage: optionsBuilder called with query: ${textEditingValue.text}',
+                          );
+                          if (textEditingValue.text.isEmpty) {
+                            _patientSearchResults = [];
+                            _clearPatientSelection();
+                            return const Iterable<PatientSearchResult>.empty();
+                          }
+                          if (textEditingValue.text.length < 2) {
+                            return const Iterable<PatientSearchResult>.empty();
+                          }
+                          context.read<PatientBloc>().add(
+                            SearchConnectedPatientsRequested(
+                              queryNama: textEditingValue.text,
+                            ),
+                          );
+                          return _patientSearchResults;
+                        },
+                        displayStringForOption:
+                            (PatientSearchResult option) => option.nama,
+                        fieldViewBuilder: (
+                          BuildContext context,
+                          TextEditingController fieldTextEditingController,
+                          FocusNode fieldFocusNode,
+                          VoidCallback onFieldSubmitted,
+                        ) {
+                          patientNameSearchController.text =
+                              fieldTextEditingController.text;
+                          fieldFocusNode.onKey = (
+                            FocusNode node,
+                            RawKeyEvent event,
+                          ) {
+                            if (event is RawKeyDownEvent &&
+                                event.logicalKey == LogicalKeyboardKey.enter) {
+                              onFieldSubmitted();
+                              return KeyEventResult.handled;
+                            }
+                            return KeyEventResult.ignored;
+                          };
+                          return TextFormField(
+                            controller: fieldTextEditingController,
+                            focusNode: fieldFocusNode,
+                            decoration: _inputDecoration(
+                              'Cari Nama Pasien Terhubung',
+                              suffixIcon:
+                                  isLoadingSearch
+                                      ? const Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      )
+                                      : (fieldTextEditingController
+                                              .text
+                                              .isNotEmpty
+                                          ? IconButton(
+                                            icon: const Icon(Icons.clear),
+                                            onPressed: () {
+                                              fieldTextEditingController
+                                                  .clear();
+                                              _clearPatientSelection();
+                                            },
+                                          )
+                                          : null),
+                            ),
+                            onFieldSubmitted: (value) {
+                              developer.log(
+                                'MedicationPage: onFieldSubmitted with value: $value',
+                              );
+                              final PatientSearchResult? selectedOption =
+                                  _patientSearchResults.firstWhereOrNull(
+                                    (element) =>
+                                        element.nama.toLowerCase() ==
+                                        value.toLowerCase(),
+                                  );
+                              if (selectedOption != null) {
+                                developer.log(
+                                  'MedicationPage: Pasien dipilih dari hasil pencarian: ${selectedOption.nama}',
+                                );
+                                setState(() {
+                                  _currentSelectedPatientName =
+                                      selectedOption.nama;
+                                  _currentSelectedPatientUniqueId =
+                                      selectedOption.idUnik;
+                                  _currentSelectedPatientGlobalId =
+                                      selectedOption.idGlobal;
+                                  patientNameSearchController.text =
+                                      selectedOption.nama;
+                                });
+                                if (_currentSelectedPatientUniqueId != null) {
+                                  _loadMedicationsForPatient(
+                                    patientUniqueId:
+                                        _currentSelectedPatientUniqueId!,
+                                    isForDoctorScheduled: true,
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'ID Unik Pasien tidak tersedia.',
+                                      ),
+                                    ),
+                                  );
+                                  _clearPatientSelection();
+                                }
+                                _patientSearchFocusNode.unfocus();
+                              } else {
+                                developer.log(
+                                  'MedicationPage: Tidak ada pasien yang cocok di hasil pencarian atau tidak dipilih dari daftar.',
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Pilih pasien dari daftar saran atau periksa nama.',
+                                    ),
+                                  ),
+                                );
+                                _clearPatientSelection();
+                              }
+                            },
+                          );
+                        },
+                        optionsViewBuilder: (
+                          BuildContext context,
+                          AutocompleteOnSelected<PatientSearchResult>
+                          onSelected,
+                          Iterable<PatientSearchResult> options,
+                        ) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 4.0,
+                              child: SizedBox(
+                                height: options.isNotEmpty ? 200.0 : 0.0,
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  itemCount: options.length,
+                                  itemBuilder: (
+                                    BuildContext context,
+                                    int index,
+                                  ) {
+                                    final PatientSearchResult option = options
+                                        .elementAt(index);
+                                    return ListTile(
+                                      title: Text(option.nama),
+                                      subtitle: Text('ID: ${option.idUnik}'),
+                                      onTap: () {
+                                        onSelected(option);
+                                        setState(() {
+                                          _currentSelectedPatientName =
+                                              option.nama;
+                                          _currentSelectedPatientUniqueId =
+                                              option.idUnik;
+                                          _currentSelectedPatientGlobalId =
+                                              option.idGlobal;
+                                          patientNameSearchController.text =
+                                              option.nama;
+                                        });
+                                        if (_currentSelectedPatientUniqueId !=
+                                            null) {
+                                          _loadMedicationsForPatient(
+                                            patientUniqueId:
+                                                _currentSelectedPatientUniqueId!,
+                                            isForDoctorScheduled: true,
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'ID Unik Pasien tidak tersedia.',
+                                              ),
+                                            ),
+                                          );
+                                          _clearPatientSelection();
+                                        }
+                                        _patientSearchFocusNode.unfocus();
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: BlocConsumer<MedicationBloc, MedicationState>(
+              listener: (context, state) {
+                if (state is MedicationLoading) {
+                  developer.log('MedicationPage: MedicationBloc is Loading...');
+                } else if (state is MedicationActionSuccess) {
+                  developer.log(
+                    'MedicationPage: MedicationActionSuccess: ${state.message}',
+                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(state.message)));
+                  if (widget.isHistory) {
+                    _loadMedicationsForPatient(
+                      patientGlobalId: _currentSelectedPatientGlobalId,
+                      patientUniqueId: _currentSelectedPatientUniqueId,
+                    );
+                  } else if (_currentUserData?.role?.toLowerCase() ==
+                      'pasien') {
+                    _loadMedicationsForPatient(
+                      patientGlobalId: _currentSelectedPatientGlobalId,
+                      patientUniqueId: _currentSelectedPatientUniqueId,
+                      isForSelfOrFamily: true,
+                    );
+                  } else if (_currentUserData?.role?.toLowerCase() ==
+                          'dokter' &&
+                      _currentSelectedPatientUniqueId != null) {
+                    _loadMedicationsForPatient(
+                      patientUniqueId: _currentSelectedPatientUniqueId!,
+                      isForDoctorScheduled: true,
+                    );
+                  } else if (_currentUserData?.role?.toLowerCase() ==
+                          'keluarga' &&
+                      _currentSelectedPatientGlobalId != null) {
+                    _loadMedicationsForPatient(
+                      patientGlobalId: _currentSelectedPatientGlobalId!,
+                      patientUniqueId: _currentSelectedPatientUniqueId,
+                      isForSelfOrFamily: true,
+                    );
+                  } else {
+                    _clearMedicationsAndShowMessage();
+                  }
+                } else if (state is MedicationError) {
+                  developer.log(
+                    'MedicationPage: MedicationError: ${state.message}',
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${state.message}')),
+                  );
+                }
+              },
+              builder: (context, state) {
+                if (_currentUserData?.role?.toLowerCase() == 'dokter' &&
+                    _currentSelectedPatientUniqueId == null &&
+                    widget.initialPatientUniqueId == null) {
+                  return const Center(
+                    child: Text(
+                      'Pilih pasien dari daftar atau gunakan pencarian untuk mengelola obat.',
+                    ),
+                  );
+                }
+
+                if (state is MedicationInitial ||
+                    (state is MedicationLoading &&
+                        !(state is MedicationActionSuccess))) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is MedicationsLoaded) {
+                  return _buildMedicationsListForDoctor(
+                    state.medications.cast<Medication>(),
+                  );
+                } else if (state is MedicationSessionsLoaded) {
+                  return _buildMedicationsListForPatient(
+                    state.sessions.cast<TodaysMedicationSession>(),
+                  );
+                } else if (state is MedicationHistoryLoaded) {
+                  return _buildMedicationHistoryList(state.history);
+                } else if (state is MedicationError) {
+                  return Center(
+                    child: Text(
+                      'Gagal memuat atau memproses obat: ${state.message}',
+                    ),
+                  );
+                }
+                return const Center(child: Text('Muat obat untuk pasien ini.'));
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton:
+          ((_currentUserData?.role?.toLowerCase() == 'dokter' &&
+                      (_currentSelectedPatientUniqueId != null ||
+                          widget.initialPatientUniqueId != null)) &&
+                  !widget.isHistory)
+              ? FloatingActionButton(
+                onPressed: () => _showAddEditMedicationDialog(context),
+                child: const Icon(Icons.add),
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+              )
+              : null,
+    );
+  }
 }
