@@ -1220,4 +1220,37 @@ class _MedicationPageState extends State<MedicationPage> {
       },
     );
   }
+
+  Future<void> _confirmDeleteMedication(
+    BuildContext context,
+    int medicationId,
+  ) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Konfirmasi Hapus'),
+            content: const Text('Apakah Anda yakin ingin menghapus obat ini?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text(
+                  'Hapus',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+    );
+    if (confirm == true) {
+      context.read<MedicationBloc>().add(
+        DeleteMedicationRequested(medicationId: medicationId),
+      );
+    }
+  }
 }
