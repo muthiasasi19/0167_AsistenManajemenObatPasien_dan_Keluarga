@@ -748,4 +748,178 @@ class _MedicationPageState extends State<MedicationPage> {
       },
     );
   }
+
+  //  Fungsi  untuk menampilkan daftar RIWAYAT KONSUMSI secara individual
+  Widget _buildMedicationHistoryList(List<MedicationHistoryData> historyItems) {
+    if (historyItems.isEmpty) {
+      return const Center(
+        child: Text('Tidak ada riwayat konsumsi obat untuk pasien ini.'),
+      );
+    }
+
+    //  Kelompokkan riwayat berdasarkan medicationId (dan nama obat untuk tampilan)
+    final Map<int?, List<MedicationHistoryData>> groupedHistory = groupBy(
+      historyItems,
+      (item) => item.medicationId, // Group by medication ID
+    );
+
+    return ListView.builder(
+      itemCount: groupedHistory.keys.length,
+      itemBuilder: (context, index) {
+        final medicationId = groupedHistory.keys.elementAt(index);
+        final historyForThisMedication = groupedHistory[medicationId]!;
+        final firstHistoryItem = historyForThisMedication.first;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          elevation: 2.0,
+          child: ExpansionTile(
+            title: Text(
+              firstHistoryItem.medicationName ?? 'Nama Obat Tidak Diketahui',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Dosis: ${firstHistoryItem.dosage ?? 'Tidak Diketahui'}'),
+                Text(
+                  firstHistoryItem.schedule?.displayString ??
+                      'Jadwal: Tidak Diketahui',
+                ),
+              ],
+            ),
+            children: <Widget>[
+              ...historyForThisMedication.map((sessionItem) {
+                String formattedConsumptionTime =
+                    sessionItem.consumptionTime != null
+                        ? DateFormat(
+                          'dd MMMM yyyy, HH:mm',
+                        ).format(DateTime.parse(sessionItem.consumptionTime!))
+                        : 'Tidak Diketahui';
+
+                String sessionTimeDisplay = '';
+                if (sessionItem.scheduledTime != null &&
+                    sessionItem.scheduledTime!.isNotEmpty) {
+                  sessionTimeDisplay =
+                      'Waktu Jadwal: ${sessionItem.scheduledTime}';
+                } else if (sessionItem.schedule?.type == 'daily_fixed_times' &&
+                    sessionItem.schedule!.times != null &&
+                    sessionItem.schedule!.times!.isNotEmpty) {
+                  ;
+                } else {
+                  sessionTimeDisplay =
+                      'Tidak Terjadwal / Jadwal Tidak Diketahui';
+                }
+
+                String sessionDetails =
+                    '$sessionTimeDisplay Status: ${sessionItem.status == 'taken' ? 'Diminum' : sessionItem.status ?? 'Tidak Diketahui'}';
+                if (sessionItem.notes != null &&
+                    sessionItem.notes!.isNotEmpty) {
+                  sessionDetails += '\nCatatan: ${sessionItem.notes}';
+                }
+                sessionDetails += '\nWaktu Aktual: $formattedConsumptionTime';
+
+                return ListTile(title: Text(sessionDetails));
+              }).toList(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Fungsi untuk menampilkan daftar sesi obat untuk role Pasien/Keluarga
+  Widget _buildMedicationsListForPatient(
+    List<TodaysMedicationSession> sessions,
+  ) {
+    if (sessions.isEmpty) {
+      return Center(
+        child: Text(
+          widget.isHistory
+              ? 'Tidak ada riwayat konsumsi obat untuk pasien ini.'
+              : 'Tidak ada jadwal obat untuk hari ini.',
+        ),
+      );
+    }
+
+    // Kelompokkan sesi berdasarkan obat
+    final Map<int, List<TodaysMedicationSession>> groupedSessions = groupBy(
+      sessions,
+      (session) => session.medicationId,
+    );
+
+    return ListView.builder(
+      itemCount: groupedSessions.keys.length,
+      itemBuilder: (context, index) {
+        final medicationId = groupedSessions.keys.elementAt(index);
+        final sessionsForThisMedication = groupedSessions[medicationId]!;
+        final firstSession = sessionsForThisMedication.first;
+
+        final bool isPrnOrUnknown =
+            firstSession.scheduledTime == null ||
+            firstSession.scheduleType == 'as_needed' ||
+            firstSession.scheduleType == 'unknown';
+
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          elevation: 2.0,
+          child: ExpansionTile(
+            title: Text(firstSession.medicationName),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Dosis: ${firstSession.dosage}'),
+                if (firstSession.description != null &&
+                    firstSession.description!.isNotEmpty)
+                  Text('Deskripsi: ${firstSession.description}'),
+              ],
+            ),
+            children: <Widget>[
+              if (isPrnOrUnknown)
+                ListTile(
+                  title: const Text('Sesuai Kebutuhan'),
+                  trailing: Checkbox(
+                    value: firstSession.isTaken,
+                    tristate: false,
+                    onChanged: (bool? value) {
+                      if (value != null) {
+                        context.read<MedicationBloc>().add(
+                          MarkMedicationAsTakenRequested(
+                            medicationId: firstSession.medicationId,
+                            isTaken: value,
+                            scheduledTime: null,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                )
+              else
+                ...sessionsForThisMedication.map((session) {
+                  return ListTile(
+                    title: Text('${session.scheduledTime}'),
+                    subtitle: Text('Status: ${session.status}'),
+                    trailing: Checkbox(
+                      value: session.isTaken,
+                      tristate: false,
+                      onChanged: (bool? value) {
+                        if (value != null) {
+                          context.read<MedicationBloc>().add(
+                            MarkMedicationAsTakenRequested(
+                              medicationId: session.medicationId,
+                              isTaken: value,
+                              scheduledTime: session.scheduledTime,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
