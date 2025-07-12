@@ -10,10 +10,14 @@ import 'package:manajemen_obat/data/models/response/medication_history_response_
     show MedicationHistoryData;
 import 'package:manajemen_obat/data/models/response/medication_response_model.dart';
 import 'package:manajemen_obat/data/models/response/patient_search_result_model.dart';
+import 'package:manajemen_obat/presentation/Home/image_viewer_page.dart';
 import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart';
 import 'package:manajemen_obat/presentation/medication/bloc/medication_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+
+import 'package:image_picker/image_picker.dart';
+import 'package:manajemen_obat/service/service_http_client.dart';
 import 'package:collection/collection.dart';
 import 'dart:developer' as developer;
 
@@ -58,6 +62,9 @@ class _MedicationPageState extends State<MedicationPage> {
   String? _selectedFrequencyType;
   List<TimeOfDay> _selectedTimes = [];
   final TextEditingController _instructionsController = TextEditingController();
+
+  File? _pickedImage; // State untuk menyimpan gambar yang dipilih
+  final ImagePicker _picker = ImagePicker();
 
   InputDecoration _inputDecoration(
     String labelText, {
@@ -575,6 +582,11 @@ class _MedicationPageState extends State<MedicationPage> {
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text(state.message)));
+                  setState(() {
+                    _pickedImage =
+                        null; // Reset picked image after successful upload
+                  });
+
                   if (widget.isHistory) {
                     _loadMedicationsForPatient(
                       patientGlobalId: _currentSelectedPatientGlobalId,
@@ -700,49 +712,63 @@ class _MedicationPageState extends State<MedicationPage> {
                 Text(
                   'Jadwal: ${medication.schedule.displayString.isNotEmpty ? medication.schedule.displayString : 'Tidak Diketahui'}',
                 ),
-                if (medication.description != null &&
-                    medication.description!.isNotEmpty)
-                  Text('Deskripsi: ${medication.description}'),
-                if (medication.photoUrl != null &&
-                    medication.photoUrl!.isNotEmpty)
+
+                if (medication.fullPhotoUrl != null &&
+                    medication.fullPhotoUrl!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
-                    child: Image.network(
-                      medication.photoUrl!,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, error, stackTrace) =>
-                              const Icon(Icons.broken_image),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => ImageViewerPage(
+                                  // Kirim photoUrl ASLI ke ImageViewerPage,
+                                  // ImageViewerPage akan membentuk URL lengkapnya sendiri
+                                  photoPath: medication.photoUrl!,
+                                ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        // ... (styling container)
+                        child: ClipRRect(
+                          // ... (styling ClipRRect)
+                          child: Image.network(
+                            medication.fullPhotoUrl!, // <--- INI PERUBAHANNYA!
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => const Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     ),
                   ),
+                // -------------------------------------------------------------------------------------------------------
               ],
             ),
-            trailing:
-                widget.isHistory
-                    ? null
-                    : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed:
-                              () => _showAddEditMedicationDialog(
-                                context,
-                                medication: medication,
-                              ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed:
-                              () => _confirmDeleteMedication(
-                                context,
-                                medication.id,
-                              ),
-                        ),
-                      ],
-                    ),
+            // ... (trailing icons)
           ),
         );
       },
@@ -800,7 +826,6 @@ class _MedicationPageState extends State<MedicationPage> {
                           ).toLocal(),
                         )
                         : 'Tidak Diketahui';
-                // --- LOG INSPEKSI BARU ---
                 developer.log(
                   'DEBUG: sessionItem.medicationName: ${sessionItem.medicationName}',
                 );
@@ -810,7 +835,6 @@ class _MedicationPageState extends State<MedicationPage> {
                 developer.log(
                   'DEBUG: sessionItem.schedule?.times: ${sessionItem.schedule?.times} (length: ${sessionItem.schedule?.times?.length ?? 0})',
                 );
-                // --- AKHIR LOG INSPEKSI ---
 
                 String detailScheduledTime;
                 // Jika scheduledTime spesifik tersedia dan tidak kosong, gunakan itu
@@ -912,6 +936,64 @@ class _MedicationPageState extends State<MedicationPage> {
                 if (firstSession.description != null &&
                     firstSession.description!.isNotEmpty)
                   Text('Deskripsi: ${firstSession.description}'),
+
+                if (firstSession.fullPhotoUrl != null &&
+                    firstSession.fullPhotoUrl!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        // Kirim photoUrl ASLI dari backend ke ImageViewerPage.
+                        // ImageViewerPage akan membentuk URL lengkapnya sendiri.
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => ImageViewerPage(
+                                  photoPath: firstSession.photoUrl!,
+                                ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey[200],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            firstSession.fullPhotoUrl!,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => const Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
             children: <Widget>[
@@ -976,13 +1058,25 @@ class _MedicationPageState extends State<MedicationPage> {
     final TextEditingController descriptionController = TextEditingController(
       text: medication?.description,
     );
-    final TextEditingController photoUrlController = TextEditingController(
-      text: medication?.photoUrl,
-    );
+    _pickedImage = null;
 
     // Inisialisasi state dialog untuk edit mode
     if (medication != null) {
-      _selectedFrequencyType = medication.schedule.type;
+      if (medication.schedule.type == 'daily_fixed_times') {
+        if (medication.schedule.times?.length == 1) {
+          _selectedFrequencyType = 'daily_fixed_times_1';
+        } else if (medication.schedule.times?.length == 2) {
+          _selectedFrequencyType = 'daily_fixed_times_2';
+        } else if (medication.schedule.times?.length == 3) {
+          _selectedFrequencyType = 'daily_fixed_times_3';
+        } else if (medication.schedule.times?.length == 4) {
+          _selectedFrequencyType = 'daily_fixed_times_4';
+        } else {
+          _selectedFrequencyType = 'daily_fixed_times_1';
+        }
+      } else {
+        _selectedFrequencyType = medication.schedule.type;
+      }
       _selectedTimes =
           medication.schedule.times?.map((timeStr) {
             final parts = timeStr.split(':');
@@ -997,6 +1091,7 @@ class _MedicationPageState extends State<MedicationPage> {
       _selectedFrequencyType = null;
       _selectedTimes = [];
       _instructionsController.clear();
+      _pickedImage = null;
     }
 
     final _dialogFormKey = GlobalKey<FormState>();
@@ -1035,6 +1130,51 @@ class _MedicationPageState extends State<MedicationPage> {
                 tod.minute,
               );
               return DateFormat.Hm().format(dt);
+            }
+
+            // Fungsi helper untuk memilih gambar, diperbarui untuk StatefulBuilder
+            void _showImageSourceSelectionDialogForDialog() {
+              showModalBottomSheet(
+                context: dialogContext,
+                builder: (BuildContext bc) {
+                  return SafeArea(
+                    child: Wrap(
+                      children: <Widget>[
+                        ListTile(
+                          leading: const Icon(Icons.photo_library),
+                          title: const Text('Pilih dari Galeri'),
+                          onTap: () async {
+                            Navigator.of(dialogContext).pop();
+                            final XFile? image = await _picker.pickImage(
+                              source: ImageSource.gallery,
+                            );
+                            if (image != null) {
+                              setDialogState(() {
+                                _pickedImage = File(image.path);
+                              });
+                            }
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.camera_alt),
+                          title: const Text('Ambil dari Kamera'),
+                          onTap: () async {
+                            Navigator.of(dialogContext).pop();
+                            final XFile? image = await _picker.pickImage(
+                              source: ImageSource.camera,
+                            );
+                            if (image != null) {
+                              setDialogState(() {
+                                _pickedImage = File(image.path);
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
             }
 
             return AlertDialog(
@@ -1141,19 +1281,68 @@ class _MedicationPageState extends State<MedicationPage> {
                         maxLines: 3,
                       ),
                       const SpaceHeight(16),
-                      TextFormField(
-                        controller: photoUrlController,
-                        decoration: _inputDecoration(
-                          'URL Foto Obat (Opsional)',
+                      GestureDetector(
+                        onTap: _showImageSourceSelectionDialogForDialog,
+                        child: Container(
+                          height: 150,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey),
+                          ),
+                          child:
+                              _pickedImage != null
+                                  ? Image.file(_pickedImage!, fit: BoxFit.cover)
+                                  : (medication?.fullPhotoUrl != null &&
+                                          medication!.fullPhotoUrl!.isNotEmpty
+                                      ? Image.network(
+                                        medication
+                                            .fullPhotoUrl!, // <--- INI PENTING! GUNAKAN fullPhotoUrl!
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const Icon(
+                                                  Icons.broken_image,
+                                                  size: 50,
+                                                  color: Colors.grey,
+                                                ),
+                                      )
+                                      : Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.camera_alt,
+                                            size: 50,
+                                            color: Colors.grey[600],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Pilih/Ambil Foto Obat (Opsional)',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      )),
                         ),
                       ),
+                      const SpaceHeight(16),
                     ],
                   ),
                 ),
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    setDialogState(() {
+                      _pickedImage = null;
+                    });
+                  },
                   child: const Text('Batal'),
                 ),
                 ElevatedButton(
@@ -1176,9 +1365,10 @@ class _MedicationPageState extends State<MedicationPage> {
 
                       // Konstruksi objek MedicationSchedule
                       final String finalScheduleType;
-                      if (_selectedFrequencyType!.startsWith(
-                        'daily_fixed_times_',
-                      )) {
+                      if (_selectedFrequencyType != null &&
+                          _selectedFrequencyType!.startsWith(
+                            'daily_fixed_times_',
+                          )) {
                         finalScheduleType = 'daily_fixed_times';
                       } else {
                         finalScheduleType = _selectedFrequencyType!;
@@ -1221,10 +1411,7 @@ class _MedicationPageState extends State<MedicationPage> {
                                   descriptionController.text.trim().isEmpty
                                       ? null
                                       : descriptionController.text.trim(),
-                              photoUrl:
-                                  photoUrlController.text.trim().isEmpty
-                                      ? null
-                                      : photoUrlController.text.trim(),
+                              photoFile: _pickedImage,
                             ),
                           ),
                         );
@@ -1240,10 +1427,8 @@ class _MedicationPageState extends State<MedicationPage> {
                                   descriptionController.text.trim().isEmpty
                                       ? null
                                       : descriptionController.text.trim(),
-                              photoUrl:
-                                  photoUrlController.text.trim().isEmpty
-                                      ? null
-                                      : photoUrlController.text.trim(),
+                              // photoFile: _pickedImage, // Mengirim File jika dipilih
+                              photoUrl: medication.photoUrl,
                             ),
                           ),
                         );
@@ -1258,7 +1443,13 @@ class _MedicationPageState extends State<MedicationPage> {
           },
         );
       },
-    );
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _pickedImage = null;
+        });
+      }
+    });
   }
 
   Future<void> _confirmDeleteMedication(

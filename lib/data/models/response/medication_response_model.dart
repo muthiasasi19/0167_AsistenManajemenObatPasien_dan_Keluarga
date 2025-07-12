@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'package:manajemen_obat/service/service_http_client.dart';
 
 class MedicationSchedule {
   final String type;
@@ -207,6 +208,17 @@ class Medication {
     "consumptionNotes": consumptionNotes,
     "scheduledTime": scheduledTime,
   };
+
+  String? get fullPhotoUrl {
+    if (photoUrl == null || photoUrl!.isEmpty) {
+      return null;
+    }
+    // baseUrl dari ServiceHttpClient adalah 'http://IP:PORT/api/'
+    // photoUrl dari backend adalah '/api/uploads/filename.jpg'
+    // Cukup gabungkan baseUrl dengan photoUrl, TETAPI hapus '/api/' dari awal photoUrl
+    // agar tidak ada '/api/api/' ganda.
+    return '${ServiceHttpClient().baseUrl}${photoUrl!.replaceFirst('/api/', '')}';
+  }
 }
 
 class MedicationsListResponseModel {
@@ -269,6 +281,13 @@ class TodaysMedicationSession {
   final String? scheduleType;
   final String? consumptionTime;
   final String? consumptionNotes;
+
+  String? get fullPhotoUrl {
+    if (photoUrl == null || photoUrl!.isEmpty) {
+      return null;
+    }
+    return '${ServiceHttpClient().baseUrl}${photoUrl!.replaceFirst('/api/', '')}';
+  }
 
   TodaysMedicationSession({
     required this.medicationId,

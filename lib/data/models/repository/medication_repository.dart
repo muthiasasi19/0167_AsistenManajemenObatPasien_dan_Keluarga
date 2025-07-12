@@ -8,7 +8,9 @@ import 'package:manajemen_obat/data/models/request/medication/update_medication_
 import 'package:manajemen_obat/data/models/response/medication_response_model.dart';
 import 'package:manajemen_obat/data/models/response/login_response_model.dart';
 import 'package:manajemen_obat/data/models/response/medication_history_response_model.dart';
+import 'package:path/path.dart' as path;
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class MedicationRepository {
   final ServiceHttpClient _httpClient;
@@ -130,8 +132,8 @@ class MedicationRepository {
     }
   }
 
-  // getTodaysMedicationSessions (Untuk Pasien/Keluarga: Jadwal Hari Ini)
-  /// Mengambil daftar sesi konsumsi obat hari ini untuk pasien atau keluarga.
+  // getTodaysMedicationSessions
+  /// Mengambil daftar sesi konsumsi obat untuk pasien atau keluarga.
   Future<Either<String, TodaysMedicationSessionListResponseModel>>
   getTodaysMedicationSessions({
     required int? patientGlobalId,
@@ -165,7 +167,7 @@ class MedicationRepository {
             'Untuk peran keluarga, Patient Unique ID harus disediakan untuk melihat jadwal obat.',
           );
         }
-        endpoint = 'medications/patient/$patientUniqueId/today';
+        endpoint = 'medications/today';
         developer.log(
           '[MED_REPO:getTodaysMedicationSessions] Keluarga Role - Final Endpoint: $endpoint',
         );
@@ -353,26 +355,62 @@ class MedicationRepository {
       }
 
       if (request.photoFile != null) {
-        var uri = Uri.parse('${_httpClient.baseUrl}/api/$endpoint');
+        developer.log(
+          "Medication Request Body (with photo file): ${request.toMap()}",
+        );
+
+        var uri = Uri.parse('${_httpClient.baseUrl}$endpoint');
         var requestHttp = http.MultipartRequest('POST', uri);
         requestHttp.headers['Authorization'] = 'Bearer $token';
 
         // Tambah file foto
+        final file = request.photoFile!;
+        final fileName = path.basename(file.path);
+        final fileExtension = path.extension(fileName).toLowerCase();
+
+        MediaType contentType;
+        switch (fileExtension) {
+          case '.png':
+            contentType = MediaType('image', 'png');
+            break;
+          case '.jpg':
+          case '.jpeg':
+            contentType = MediaType('image', 'jpeg');
+            break;
+          case '.gif':
+            contentType = MediaType('image', 'gif');
+            break;
+          default:
+            contentType = MediaType('application', 'octet-stream');
+        }
+
         requestHttp.files.add(
-          await http.MultipartFile.fromPath(
+          http.MultipartFile.fromBytes(
             'photo',
-            request.photoFile!.path,
-            filename: request.photoFile!.path.split('/').last,
+            file.readAsBytesSync(),
+            filename: fileName,
+            contentType: contentType,
           ),
         );
 
+        // Tambahkan field data obat lainnya
         requestHttp.fields['medicationName'] = request.medicationName;
         requestHttp.fields['dosage'] = request.dosage;
         requestHttp.fields['schedule'] = json.encode(request.schedule.toMap());
         requestHttp.fields['description'] = request.description ?? '';
 
+        developer.log("ServiceHttpClient: Sending MULTIPART POST to $uri");
+        developer.log("ServiceHttpClient: Token for MULTIPART POST: $token");
+
         var streamedResponse = await requestHttp.send();
         var response = await http.Response.fromStream(streamedResponse);
+
+        developer.log(
+          'HttpClient: [TOKEN] MULTIPART POST Response Status: ${response.statusCode}',
+        );
+        developer.log(
+          'HttpClient: [TOKEN] MULTIPART POST Response Body: ${response.body}',
+        );
 
         if (response.statusCode == 201) {
           developer.log(
