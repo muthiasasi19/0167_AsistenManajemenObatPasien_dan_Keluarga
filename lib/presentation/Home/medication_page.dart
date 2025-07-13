@@ -765,10 +765,40 @@ class _MedicationPageState extends State<MedicationPage> {
                       ),
                     ),
                   ),
-                // -------------------------------------------------------------------------------------------------------
               ],
             ),
-            // ... (trailing icons)
+            trailing:
+                _currentUserData?.role?.toLowerCase() == 'dokter' &&
+                        !widget.isHistory
+                    ? Row(
+                      // PERUBAHAN: Menggunakan Row untuk menampung beberapa ikon
+                      mainAxisSize:
+                          MainAxisSize
+                              .min, // Agar Row tidak mengambil lebar penuh
+                      children: [
+                        // PERUBAHAN: Icon untuk Edit
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit,
+                            color: Colors.blue,
+                          ), // Icon edit
+                          onPressed: () {
+                            // PERUBAHAN: Panggil dialog edit dengan data obat yang sudah ada
+                            _showAddEditMedicationDialog(
+                              context,
+                              medication: medication,
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            _confirmDeleteMedication(context, medication.id);
+                          },
+                        ),
+                      ],
+                    )
+                    : null,
           ),
         );
       },
@@ -965,7 +995,8 @@ class _MedicationPageState extends State<MedicationPage> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            firstSession.fullPhotoUrl!,
+                            firstSession
+                                .fullPhotoUrl!, // <--- INI PENTING! GUNAKAN fullPhotoUrl!
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
@@ -1063,19 +1094,30 @@ class _MedicationPageState extends State<MedicationPage> {
     // Inisialisasi state dialog untuk edit mode
     if (medication != null) {
       if (medication.schedule.type == 'daily_fixed_times') {
+        //PERUBAHAN DROPDOWN
         if (medication.schedule.times?.length == 1) {
-          _selectedFrequencyType = 'daily_fixed_times_1';
+          //PERUBAHAN DROPDOWN
+          _selectedFrequencyType = 'daily_fixed_times_1'; //PERUBAHAN DROPDOWN
         } else if (medication.schedule.times?.length == 2) {
-          _selectedFrequencyType = 'daily_fixed_times_2';
+          //PERUBAHAN DROPDOWN
+          _selectedFrequencyType = 'daily_fixed_times_2'; //PERUBAHAN DROPDOWN
         } else if (medication.schedule.times?.length == 3) {
-          _selectedFrequencyType = 'daily_fixed_times_3';
+          //PERUBAHAN DROPDOWN
+          _selectedFrequencyType = 'daily_fixed_times_3'; //PERUBAHAN DROPDOWN
         } else if (medication.schedule.times?.length == 4) {
-          _selectedFrequencyType = 'daily_fixed_times_4';
+          //PERUBAHAN DROPDOWN
+          _selectedFrequencyType = 'daily_fixed_times_4'; //PERUBAHAN DROPDOWN
         } else {
-          _selectedFrequencyType = 'daily_fixed_times_1';
-        }
+          //PERUBAHAN DROPDOWN
+          _selectedFrequencyType =
+              'daily_fixed_times_1'; // Default jika tidak ada yang cocok //PERUBAHAN DROPDOWN
+        } //PERUBAHAN DROPDOWN
       } else {
-        _selectedFrequencyType = medication.schedule.type;
+        //PERUBAHAN DROPDOWN
+        _selectedFrequencyType =
+            medication
+                .schedule
+                .type; // Untuk tipe lain jika ada, atau akan null //PERUBAHAN DROPDOWN
       }
       _selectedTimes =
           medication.schedule.times?.map((timeStr) {
@@ -1135,7 +1177,7 @@ class _MedicationPageState extends State<MedicationPage> {
             // Fungsi helper untuk memilih gambar, diperbarui untuk StatefulBuilder
             void _showImageSourceSelectionDialogForDialog() {
               showModalBottomSheet(
-                context: dialogContext,
+                context: dialogContext, // Gunakan dialogContext
                 builder: (BuildContext bc) {
                   return SafeArea(
                     child: Wrap(
@@ -1150,6 +1192,7 @@ class _MedicationPageState extends State<MedicationPage> {
                             );
                             if (image != null) {
                               setDialogState(() {
+                                // Perbarui state dialog
                                 _pickedImage = File(image.path);
                               });
                             }
@@ -1165,6 +1208,7 @@ class _MedicationPageState extends State<MedicationPage> {
                             );
                             if (image != null) {
                               setDialogState(() {
+                                // Perbarui state dialog
                                 _pickedImage = File(image.path);
                               });
                             }

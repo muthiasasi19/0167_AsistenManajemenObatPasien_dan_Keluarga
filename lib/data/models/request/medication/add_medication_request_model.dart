@@ -47,4 +47,14 @@ class AddMedicationRequestModel {
     "description": description,
     "photoUrl": photoUrl,
   };
+
+  // @override
+  // List<Object?> get props => [
+  //   medicationName,
+  //   dosage,
+  //   schedule,
+  //   description,
+  //   photoUrl,
+  //   photoFile,
+  // ];
 }

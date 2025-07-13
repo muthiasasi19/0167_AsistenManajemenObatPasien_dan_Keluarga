@@ -132,8 +132,8 @@ class MedicationRepository {
     }
   }
 
-  // getTodaysMedicationSessions
-  /// Mengambil daftar sesi konsumsi obat untuk pasien atau keluarga.
+  // getTodaysMedicationSessions (Untuk Pasien/Keluarga: Jadwal Hari Ini)
+  /// Mengambil daftar sesi konsumsi obat hari ini untuk pasien atau keluarga.
   Future<Either<String, TodaysMedicationSessionListResponseModel>>
   getTodaysMedicationSessions({
     required int? patientGlobalId,
@@ -359,7 +359,9 @@ class MedicationRepository {
           "Medication Request Body (with photo file): ${request.toMap()}",
         );
 
-        var uri = Uri.parse('${_httpClient.baseUrl}$endpoint');
+        var uri = Uri.parse(
+          '${_httpClient.baseUrl}$endpoint',
+        ); // Perbaikan: Gunakan _httpClient.baseUrl tanpa /api/ di akhir
         var requestHttp = http.MultipartRequest('POST', uri);
         requestHttp.headers['Authorization'] = 'Bearer $token';
 
@@ -425,7 +427,9 @@ class MedicationRepository {
           try {
             final errorBody = jsonDecode(response.body);
             message = errorBody['message'] ?? message;
-          } catch (e) {}
+          } catch (e) {
+            // Biarkan pesan default jika parsing errorBody gagal
+          }
           return Left(message);
         }
       } else {

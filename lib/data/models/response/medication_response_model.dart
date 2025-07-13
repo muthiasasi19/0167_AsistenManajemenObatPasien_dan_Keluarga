@@ -287,6 +287,8 @@ class TodaysMedicationSession {
       return null;
     }
     return '${ServiceHttpClient().baseUrl}${photoUrl!.replaceFirst('/api/', '')}';
+    // Atau yang lebih aman (seperti yang sebelumnya saya berikan):
+    // return '${ServiceHttpClient().baseUrl}${photoUrl!.replaceFirst('/api/', '')}';
   }
 
   TodaysMedicationSession({

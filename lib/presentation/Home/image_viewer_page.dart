@@ -1,8 +1,10 @@
+// lib/presentation/image_viewer_page.dart
 import 'package:flutter/material.dart';
-import 'package:manajemen_obat/service/service_http_client.dart';
+import 'package:manajemen_obat/service/service_http_client.dart'; // Import ServiceHttpClient
 
 class ImageViewerPage extends StatelessWidget {
-  final String photoPath;
+  final String
+  photoPath; // Ini adalah '/api/uploads/nama_file.jpg' dari backend
 
   const ImageViewerPage({Key? key, required this.photoPath}) : super(key: key);
 
