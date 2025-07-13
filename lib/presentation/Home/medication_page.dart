@@ -1230,7 +1230,6 @@ class _MedicationPageState extends State<MedicationPage> {
         final firstSession = sessionsForThisMedication.first;
 
         final bool isPrnOrUnknown =
-            firstSession.scheduledTime == null ||
             firstSession.scheduleType == 'as_needed' ||
             firstSession.scheduleType == 'unknown';
 
@@ -1776,13 +1775,6 @@ class _MedicationPageState extends State<MedicationPage> {
                               value: 'daily_fixed_times',
                               child: Text(
                                 'Harian (Pilih frekuensi)',
-                                style: TextStyle(color: AppColors.black),
-                              ), // Black text
-                            ),
-                            DropdownMenuItem(
-                              value: 'as_needed',
-                              child: Text(
-                                'Sesuai Kebutuhan (PRN)',
                                 style: TextStyle(color: AppColors.black),
                               ), // Black text
                             ),
