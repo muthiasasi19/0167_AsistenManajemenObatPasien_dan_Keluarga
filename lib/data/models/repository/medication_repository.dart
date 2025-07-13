@@ -132,8 +132,8 @@ class MedicationRepository {
     }
   }
 
-  // getTodaysMedicationSessions (Untuk Pasien/Keluarga: Jadwal Hari Ini)
-  /// Mengambil daftar sesi konsumsi obat hari ini untuk pasien atau keluarga.
+  // getTodaysMedicationSessions
+  /// Mengambil daftar sesi konsumsi obat untuk pasien atau keluarga.
   Future<Either<String, TodaysMedicationSessionListResponseModel>>
   getTodaysMedicationSessions({
     required int? patientGlobalId,
@@ -348,70 +348,28 @@ class MedicationRepository {
       );
 
       final String endpoint = 'obat/$patientUniqueId';
-      final String? token = await _httpClient.getToken();
-
-      if (token == null) {
-        throw Exception('Authentication token not found.');
-      }
 
       if (request.photoFile != null) {
         developer.log(
           "Medication Request Body (with photo file): ${request.toMap()}",
         );
 
-        var uri = Uri.parse(
-          '${_httpClient.baseUrl}$endpoint',
-        ); // Perbaikan: Gunakan _httpClient.baseUrl tanpa /api/ di akhir
-        var requestHttp = http.MultipartRequest('POST', uri);
-        requestHttp.headers['Authorization'] = 'Bearer $token';
+        // Buat map untuk fields non-file
+        final Map<String, String> fields = {
+          'medicationName': request.medicationName,
+          'dosage': request.dosage,
+          'schedule': json.encode(
+            request.schedule.toMap(),
+          ), // Convert schedule to JSON string
+          'description': request.description ?? '',
+        };
+        // photoUrl tidak dikirim di fields jika ada photoFile karena backend akan menghasilkan yang baru
 
-        // Tambah file foto
-        final file = request.photoFile!;
-        final fileName = path.basename(file.path);
-        final fileExtension = path.extension(fileName).toLowerCase();
-
-        MediaType contentType;
-        switch (fileExtension) {
-          case '.png':
-            contentType = MediaType('image', 'png');
-            break;
-          case '.jpg':
-          case '.jpeg':
-            contentType = MediaType('image', 'jpeg');
-            break;
-          case '.gif':
-            contentType = MediaType('image', 'gif');
-            break;
-          default:
-            contentType = MediaType('application', 'octet-stream');
-        }
-
-        requestHttp.files.add(
-          http.MultipartFile.fromBytes(
-            'photo',
-            file.readAsBytesSync(),
-            filename: fileName,
-            contentType: contentType,
-          ),
-        );
-
-        // Tambahkan field data obat lainnya
-        requestHttp.fields['medicationName'] = request.medicationName;
-        requestHttp.fields['dosage'] = request.dosage;
-        requestHttp.fields['schedule'] = json.encode(request.schedule.toMap());
-        requestHttp.fields['description'] = request.description ?? '';
-
-        developer.log("ServiceHttpClient: Sending MULTIPART POST to $uri");
-        developer.log("ServiceHttpClient: Token for MULTIPART POST: $token");
-
-        var streamedResponse = await requestHttp.send();
-        var response = await http.Response.fromStream(streamedResponse);
-
-        developer.log(
-          'HttpClient: [TOKEN] MULTIPART POST Response Status: ${response.statusCode}',
-        );
-        developer.log(
-          'HttpClient: [TOKEN] MULTIPART POST Response Body: ${response.body}',
+        final response = await _httpClient.postMultipart(
+          endpoint,
+          fields,
+          request.photoFile,
+          'photo', // Nama field untuk file di backend
         );
 
         if (response.statusCode == 201) {
@@ -427,12 +385,11 @@ class MedicationRepository {
           try {
             final errorBody = jsonDecode(response.body);
             message = errorBody['message'] ?? message;
-          } catch (e) {
-            // Biarkan pesan default jika parsing errorBody gagal
-          }
+          } catch (e) {}
           return Left(message);
         }
       } else {
+        // Jika tidak ada photoFile, lakukan POST biasa
         developer.log(
           "Medication Request Body (no photo): ${jsonEncode(request.toMap())}",
         );
@@ -498,48 +455,94 @@ class MedicationRepository {
       developer.log(
         "Updating Medication ID: $medicationId by Doctor ID: $doctorGlobalId",
       );
-      developer.log(
-        "Update Medication Request Body: ${jsonEncode(request.toMap())}",
-      );
+      final String endpoint = 'obat/$medicationId';
 
-      final response = await _httpClient.put(
-        'obat/$medicationId',
-        request.toMap(),
-      );
+      // Cek apakah ada photoFile baru atau photoUrl yang dipertahankan
+      if (request.photoFile != null || request.photoUrl != null) {
+        developer.log(
+          "Medication Update Request Body (with photo): ${request.toMap()}",
+        );
 
-      developer.log(
-        "Update Medication Response Status code: ${response.statusCode}",
-      );
-      developer.log("Update Medication Response body: ${response.body}");
+        // Buat map untuk fields non-file
+        final Map<String, String> fields = {
+          'medicationName': request.medicationName,
+          'dosage': request.dosage,
+          'schedule': json.encode(
+            request.schedule.toMap(),
+          ), // Convert schedule to JSON string
+          'description': request.description ?? '',
+          'photoUrl':
+              request.photoUrl ??
+              '', // Kirim photoUrl yang ada (lama) jika tidak ada file baru
+        };
 
-      if (response.statusCode == 200) {
-        try {
-          final responseModel = SingleMedicationResponseModel.fromJson(
-            response.body,
-          );
-          developer.log("Update Medication Success: ${responseModel.message}");
-          return Right(responseModel);
-        } catch (jsonError, st) {
+        final response = await _httpClient.putMultipart(
+          endpoint,
+          fields,
+          request.photoFile, // Jika null, tidak ada file baru yang diunggah
+          'photo', // Nama field untuk file di backend
+        );
+
+        if (response.statusCode == 200) {
           developer.log(
-            "Update Medication JSON Parsing Error: $jsonError\n$st",
+            'Medication updated successfully with photo: ${response.body}',
           );
-          return const Left(
-            "Gagal memproses data obat yang diperbarui dari server. Format data tidak valid.",
+          return Right(SingleMedicationResponseModel.fromJson(response.body));
+        } else {
+          developer.log(
+            'Failed to update medication with photo: ${response.statusCode} ${response.body}',
           );
+          String message = 'Gagal memperbarui obat dengan foto.';
+          try {
+            final errorBody = jsonDecode(response.body);
+            message = errorBody['message'] ?? message;
+          } catch (e) {}
+          return Left(message);
         }
       } else {
-        String message = 'Gagal memperbarui obat.';
-        try {
-          final errorBody = jsonDecode(response.body);
-          message = errorBody['message'] ?? message;
-        } catch (e) {
-          developer.log("Update Medication Failed to parse error body: $e");
-          message = 'Gagal memperbarui obat. Respon server tidak dapat dibaca.';
-        }
+        // Jika tidak ada photoFile atau photoUrl, lakukan PUT biasa
         developer.log(
-          "Update Medication Failed (${response.statusCode}): $message",
+          "Update Medication Request Body (no new photo): ${jsonEncode(request.toMap())}",
         );
-        return Left(message);
+        final response = await _httpClient.put(endpoint, request.toMap());
+
+        developer.log(
+          "Update Medication Response Status code: ${response.statusCode}",
+        );
+        developer.log("Update Medication Response body: ${response.body}");
+
+        if (response.statusCode == 200) {
+          try {
+            final responseModel = SingleMedicationResponseModel.fromJson(
+              response.body,
+            );
+            developer.log(
+              "Update Medication Success: ${responseModel.message}",
+            );
+            return Right(responseModel);
+          } catch (jsonError, st) {
+            developer.log(
+              "Update Medication JSON Parsing Error: $jsonError\n$st",
+            );
+            return const Left(
+              "Gagal memproses data obat yang diperbarui dari server. Format data tidak valid.",
+            );
+          }
+        } else {
+          String message = 'Gagal memperbarui obat.';
+          try {
+            final errorBody = jsonDecode(response.body);
+            message = errorBody['message'] ?? message;
+          } catch (e) {
+            developer.log("Update Medication Failed to parse error body: $e");
+            message =
+                'Gagal memperbarui obat. Respon server tidak dapat dibaca.';
+          }
+          developer.log(
+            "Update Medication Failed (${response.statusCode}): $message",
+          );
+          return Left(message);
+        }
       }
     } catch (e, stackTrace) {
       developer.log("Update Medication Error: $e");

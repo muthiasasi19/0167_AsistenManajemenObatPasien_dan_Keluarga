@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:bloc/bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:manajemen_obat/data/models/repository/family_repository.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Untuk akses secure storage
+import 'package:manajemen_obat/data/models/repository/family_repository.dart'; // Impor FamilyRepository
 import 'package:manajemen_obat/data/models/request/connect_patient_family_request_model.dart';
 import 'package:manajemen_obat/data/models/response/connect_patient_family_response_model.dart';
-import 'package:manajemen_obat/data/models/response/login_response_model.dart';
+import 'package:manajemen_obat/data/models/response/login_response_model.dart'; // Impor User model dari login_response_model.dart
+import 'package:manajemen_obat/data/models/response/family_response_model.dart';
 part 'family_event.dart';
 part 'family_state.dart';
 
@@ -17,6 +18,7 @@ class FamilyBloc extends Bloc<FamilyEvent, FamilyState> {
     on<LoadFamilyDataRequested>(_onLoadFamilyDataRequested);
     on<LoadConnectedPatientsRequested>(_onLoadConnectedPatientsRequested);
     on<ConnectPatientRequested>(_onConnectPatientRequested);
+    // on<UpdatePatientLocationRequested>(_onUpdatePatientLocationRequested); // Untuk fitur P1
   }
 
   // Event handler untuk memuat data profil keluarga
@@ -36,7 +38,7 @@ class FamilyBloc extends Bloc<FamilyEvent, FamilyState> {
           "FamilyBloc: Data keluarga berhasil dimuat: ${familyUserData.username}",
         );
 
-        // Setelah data keluarga dimuat, otomatis akan memuat daftar pasien terhubung
+        // Setelah data keluarga dimuat, otomatis muat daftar pasien terhubung
         add(const LoadConnectedPatientsRequested());
       } else {
         log("FamilyBloc: Data user keluarga tidak ditemukan di storage.");
@@ -59,6 +61,8 @@ class FamilyBloc extends Bloc<FamilyEvent, FamilyState> {
     LoadConnectedPatientsRequested event,
     Emitter<FamilyState> emit,
   ) async {
+    // Pastikan kita tidak menggantikan FamilyLoaded jika sudah ada
+    // atau jika state saat ini bukan loading untuk profil
     if (state is! FamilyLoading && state is! ConnectedPatientsLoading) {
       emit(const ConnectedPatientsLoading()); // Emit loading state
     }
@@ -92,6 +96,8 @@ class FamilyBloc extends Bloc<FamilyEvent, FamilyState> {
 
     final requestModel = FamilyConnectRequestModel(
       patientUniqueId: event.patientUniqueId,
+      // HAPUS BARIS 'data: [],' INI, KARENA FAMILYCONNECTREQUESTMODEL TIDAK PUNYA PARAMETER 'DATA'
+      // data: [],
     );
     final result = await familyRepository.connectPatientToFamily(requestModel);
 
@@ -104,9 +110,22 @@ class FamilyBloc extends Bloc<FamilyEvent, FamilyState> {
       },
       (successMessage) {
         log("FamilyBloc: Berhasil menghubungkan pasien: $successMessage");
-        emit(PatientConnectionSuccess(message: successMessage));
+        emit(
+          PatientConnectionSuccess(message: successMessage),
+        ); // Emit success state
+        // Setelah berhasil, muat ulang daftar pasien terhubung
         add(const LoadConnectedPatientsRequested());
       },
     );
   }
+
+  // Event handler untuk update lokasi pasien (fitur P1)
+  // Future<void> _onUpdatePatientLocationRequested(
+  //   UpdatePatientLocationRequested event,
+  //   Emitter<FamilyState> emit,
+  // ) async {
+  //   // Ini akan diimplementasikan di sisi pasien, bukan keluarga.
+  //   // Keluarga hanya melihat lokasi.
+  //   // Untuk keluarga, jika perlu memuat lokasi real-time dari satu pasien, bisa jadi event terpisah.
+  // }
 }

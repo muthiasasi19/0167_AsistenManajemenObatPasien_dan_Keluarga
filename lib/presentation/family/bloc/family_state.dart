@@ -1,5 +1,6 @@
 part of 'family_bloc.dart';
 
+// Kelas dasar untuk semua state Family
 sealed class FamilyState {
   const FamilyState();
 }
@@ -24,6 +25,12 @@ final class FamilyLoaded extends FamilyState {
 final class FamilyError extends FamilyState {
   final String message;
   const FamilyError({required this.message});
+}
+
+//Profil family
+final class FamilyProfileLoaded extends FamilyState {
+  final FamilyData familyData; // Data profil anggota keluarga yang login
+  const FamilyProfileLoaded({required this.familyData});
 }
 
 // State saat daftar pasien terhubung sedang dimuat
@@ -59,3 +66,18 @@ final class PatientConnectionFailure extends FamilyState {
   final String error;
   const PatientConnectionFailure({required this.error});
 }
+
+// State untuk lokasi pasien (jika diimplementasikan di sini)
+// final class PatientLocationLoading extends FamilyState {
+//   const PatientLocationLoading();
+// }
+
+// final class PatientLocationLoaded extends FamilyState {
+//   final PatientLocationData locationData;
+//   const PatientLocationLoaded({required this.locationData});
+// }
+
+// final class PatientLocationError extends FamilyState {
+//   final String message;
+//   const PatientLocationError({required this.message});
+// }

@@ -1,3 +1,5 @@
+// lib/presentation/home/patient_management_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:manajemen_obat/core/core.dart';
@@ -188,6 +190,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
               listener: (context, state) {
                 if (state is PatientLoading &&
                     _connectPatientFormKey.currentContext == null) {
+                  // No snackbar on loading, rely on CircularProgressIndicator
                 } else if (state is PatientError &&
                     _connectPatientFormKey.currentContext == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -238,7 +241,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
     );
   }
 
-  // Fungsi _buildPatientList dipindahkan ke dalam kelas _PatientManagementPageState
+  // INI YANG AKU PERBAIKI: Fungsi _buildPatientList dipindahkan ke dalam kelas _PatientManagementPageState
   Widget _buildPatientList(List<Patient> patients) {
     return ListView.builder(
       itemCount: patients.length,
@@ -249,7 +252,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
           elevation: 2.0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
-          ),
+          ), // Memberikan border radius pada Card
           child: ExpansionTile(
             // Mengubah ListTile menjadi ExpansionTile
             leading: const Icon(Icons.person),
@@ -264,7 +267,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    // Button "Obat"
+                    // Tombol "Obat"
                     _buildSmallFeatureButton(
                       context,
                       icon: Icons.medication_outlined,
@@ -272,16 +275,19 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                       onTap: () {
                         context.push(
                           MedicationPage(
-                            initialPatientUniqueId: patient.patientId,
-                            initialPatientName: patient.name,
-                            isHistory: false,
-                            isPatientRole: false,
-                            isFamilyRole: false,
+                            initialPatientUniqueId:
+                                patient.patientId, // Kirim ID Unik pasien
+                            initialPatientName:
+                                patient.name, // Kirim nama pasien
+                            isHistory:
+                                false, // Bukan riwayat, ini manajemen/jadwal
+                            isPatientRole: false, // Dokter bukan pasien
+                            isFamilyRole: false, // Dokter bukan keluarga
                           ),
                         );
                       },
                     ),
-                    // Button "Riwayat"
+                    // Tombol "Riwayat"
                     _buildSmallFeatureButton(
                       context,
                       icon: Icons.history_edu_outlined,
@@ -289,15 +295,18 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                       onTap: () {
                         context.push(
                           MedicationPage(
-                            initialPatientUniqueId: patient.patientId,
-                            initialPatientName: patient.name,
-                            isHistory: true,
-                            isPatientRole: false,
-                            isFamilyRole: false,
+                            initialPatientUniqueId:
+                                patient.patientId, // Kirim ID Unik pasien
+                            initialPatientName:
+                                patient.name, // Kirim nama pasien
+                            isHistory: true, // Ini adalah riwayat
+                            isPatientRole: false, // Dokter bukan pasien
+                            isFamilyRole: false, // Dokter bukan keluarga
                           ),
                         );
                       },
                     ),
+                    // Tidak ada tombol "Lokasi" untuk dokter
                   ],
                 ),
               ),
@@ -308,6 +317,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
     );
   }
 
+  // INI YANG AKU PERBAIKI: Fungsi _buildPatientListFromSearchResults dipindahkan ke dalam kelas _PatientManagementPageState
   Widget _buildPatientListFromSearchResults(
     List<PatientSearchResult> searchResults,
   ) {
@@ -322,6 +332,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
             borderRadius: BorderRadius.circular(10.0),
           ),
           child: ExpansionTile(
+            // Mengubah ListTile menjadi ExpansionTile
             leading: const Icon(Icons.person),
             title: Text(patient.nama),
             subtitle: Text('ID: ${patient.idUnik}'),
@@ -334,7 +345,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    // Button "Obat"
+                    // Tombol "Obat"
                     _buildSmallFeatureButton(
                       context,
                       icon: Icons.medication_outlined,
@@ -342,8 +353,10 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                       onTap: () {
                         context.push(
                           MedicationPage(
-                            initialPatientUniqueId: patient.idUnik,
-                            initialPatientName: patient.nama,
+                            initialPatientUniqueId:
+                                patient.idUnik, // Kirim ID Unik pasien
+                            initialPatientName:
+                                patient.nama, // Kirim nama pasien
                             isHistory: false,
                             isPatientRole: false,
                             isFamilyRole: false,
@@ -351,7 +364,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                         );
                       },
                     ),
-                    // Button "Riwayat"
+                    // Tombol "Riwayat"
                     _buildSmallFeatureButton(
                       context,
                       icon: Icons.history_edu_outlined,
@@ -359,8 +372,10 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                       onTap: () {
                         context.push(
                           MedicationPage(
-                            initialPatientUniqueId: patient.idUnik,
-                            initialPatientName: patient.nama,
+                            initialPatientUniqueId:
+                                patient.idUnik, // Kirim ID Unik pasien
+                            initialPatientName:
+                                patient.nama, // Kirim nama pasien
                             isHistory: true,
                             isPatientRole: false,
                             isFamilyRole: false,
@@ -368,6 +383,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                         );
                       },
                     ),
+                    // Tidak ada tombol "Lokasi" untuk dokter
                   ],
                 ),
               ),
@@ -385,18 +401,28 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
     required VoidCallback onTap,
   }) {
     return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      // Menggunakan Card untuk setiap tombol kecil agar ada elevasi dan shape
+      margin: EdgeInsets.zero, // Menghilangkan margin antar card
+      elevation: 0, // Mengurangi elevasi agar tidak terlalu menonjol
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.0),
+      ), // Memberikan border radius
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8.0),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12.0,
+            vertical: 8.0,
+          ), // Padding di dalam tombol
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min, // Memastikan Column tidak melebar
             children: [
-              Icon(icon, size: 28, color: Theme.of(context).primaryColor),
+              Icon(
+                icon,
+                size: 28,
+                color: Theme.of(context).primaryColor,
+              ), // Ukuran ikon disesuaikan
               const SizedBox(height: 4),
               Text(
                 label,
@@ -409,3 +435,22 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
     );
   }
 }
+// class RiwayatKonsumsiPasien extends StatelessWidget {
+//   // --- PERBAIKAN: Ubah tipe data patientGlobalId menjadi String ---
+//   final String patientGlobalId;
+//   // --- AKHIR PERBAIKAN ---
+
+//   const RiwayatKonsumsiPasien({super.key, required this.patientGlobalId});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: const Text('Riwayat Konsumsi Obat')),
+//       body: Center(
+//         child: Text(
+//           'Halaman Riwayat Konsumsi untuk Pasien ID: $patientGlobalId\nImplementasi UI/Logika akan ada di sini.',
+//         ),
+//       ),
+//     );
+//   }
+// }

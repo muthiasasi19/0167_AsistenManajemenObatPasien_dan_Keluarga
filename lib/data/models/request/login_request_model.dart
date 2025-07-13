@@ -6,6 +6,9 @@ class LoginRequestModel {
 
   LoginRequestModel({this.username, this.password});
 
+  //factory LoginRequestModel.fromJson(String str) =>
+  //  LoginRequestModel.fromMap(json.decode(str));
+
   String toJson() => json.encode(toMap());
 
   factory LoginRequestModel.fromMap(Map<String, dynamic> json) =>

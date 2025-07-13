@@ -3,14 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'dart:developer';
-import 'package:manajemen_obat/core/core.dart';
+import 'package:manajemen_obat/core/core.dart'; // Untuk context.push, AppColors
+import 'package:manajemen_obat/core/components/spaces.dart'; // Import spaces
 import 'package:manajemen_obat/data/models/response/connect_patient_family_response_model.dart';
-import 'package:manajemen_obat/presentation/auth/login_screen.dart';
-import 'package:manajemen_obat/presentation/profil/keluarga_profil_screen.dart';
-import 'package:manajemen_obat/data/models/response/login_response_model.dart';
-import 'package:manajemen_obat/presentation/family/bloc/family_bloc.dart';
-import 'package:manajemen_obat/presentation/Home/medication_page.dart';
-import 'package:manajemen_obat/presentation/Home/pasien_location_page.dart';
+import 'package:manajemen_obat/presentation/auth/login_screen.dart'; // Untuk logout
+import 'package:manajemen_obat/presentation/profil/keluarga_profil_screen.dart'; // Untuk profil keluarga
+
+// Impor model dan bloc yang relevan
+import 'package:manajemen_obat/data/models/response/login_response_model.dart'; // Untuk model User
+import 'package:manajemen_obat/presentation/family/bloc/family_bloc.dart'; // Untuk FamilyBloc
+import 'package:manajemen_obat/presentation/Home/medication_page.dart'; // Untuk melihat obat/riwayat pasien
+import 'package:manajemen_obat/presentation/Home/pasien_location_page.dart'; // Halaman untuk lokasi pasien (placeholder)
 
 class KeluargaHomeScreen extends StatefulWidget {
   const KeluargaHomeScreen({super.key});
@@ -24,7 +27,7 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
   List<FamilyConnectedPatientData> _connectedPatients = [];
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  // Controller untuk  koneksi pasien
+  // Controller untuk dialog koneksi pasien
   final TextEditingController _connectPatientIdController =
       TextEditingController();
   final GlobalKey<FormState> _connectPatientFormKey = GlobalKey<FormState>();
@@ -41,11 +44,11 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
   @override
   void dispose() {
     _connectPatientIdController.dispose();
-    _connectPatientFormKey.currentState?.dispose();
+    // _connectPatientFormKey.currentState?.dispose(); // GlobalKey tidak perlu didispose
     super.dispose();
   }
 
-  // Helper method untuk styling InputDecoration
+  // Helper method untuk styling InputDecoration secara konsisten
   InputDecoration _inputDecoration(
     String labelText, {
     Widget? prefixIcon,
@@ -53,40 +56,57 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
   }) {
     return InputDecoration(
       labelText: labelText,
+      labelStyle: const TextStyle(
+        color: AppColors.grey,
+      ), // Consistent grey label
+      floatingLabelStyle: const TextStyle(
+        color: AppColors.deepPurple,
+        fontWeight: FontWeight.bold,
+      ), // Bold and purple when floating
       prefixIcon: prefixIcon,
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16.0),
-        borderSide: const BorderSide(color: Colors.grey),
+        borderRadius: BorderRadius.circular(12.0), // Rounded corners
+        borderSide: const BorderSide(
+          color: AppColors.light,
+        ), // Lighter grey border for cleaner look
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16.0),
-        borderSide: const BorderSide(color: Colors.grey),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(
+          color: AppColors.light,
+        ), // Lighter grey border
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16.0),
-        borderSide: BorderSide(
-          color: Theme.of(context).primaryColor,
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(
+          color: AppColors.deepPurple, // Deep purple border when focused
           width: 2.0,
         ),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16.0),
-        borderSide: const BorderSide(color: Colors.red),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(
+          color: AppColors.red, // Red border for errors
+        ),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16.0),
-        borderSide: const BorderSide(color: Colors.red, width: 2.0),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: AppColors.red, width: 2.0),
       ),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.white, // White fill for text fields
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 14.0,
+        horizontal: 16.0,
+      ),
     );
   }
 
-  //  untuk menghubungkan pasien baru
+  // Dialog untuk menghubungkan pasien baru
   Future<void> _showConnectPatientDialog(BuildContext dialogContext) async {
     _connectPatientIdController
-        .clear(); // untuk bersihkan input setiap kali dialog dibuka
+        .clear(); // Bersihkan input setiap kali dialog dibuka
 
     await showDialog(
       context: dialogContext,
@@ -97,7 +117,7 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
               ScaffoldMessenger.of(
                 listenerContext,
               ).showSnackBar(SnackBar(content: Text(state.message)));
-              Navigator.pop(listenerContext);
+              Navigator.pop(listenerContext); // Tutup dialog
             } else if (state is PatientConnectionFailure) {
               ScaffoldMessenger.of(
                 listenerContext,
@@ -105,12 +125,44 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
             }
           },
           child: AlertDialog(
-            title: const Text('Hubungkan Pasien Baru'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ), // More rounded dialog corners
+            titlePadding: const EdgeInsets.fromLTRB(
+              24.0,
+              24.0,
+              24.0,
+              16.0,
+            ), // More padding for title
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 10.0,
+            ), // Consistent content padding
+            actionsPadding: const EdgeInsets.fromLTRB(
+              16.0,
+              0,
+              16.0,
+              16.0,
+            ), // Consistent actions padding
+            title: const Text(
+              'Hubungkan Pasien Baru',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.black,
+                fontSize: 22,
+              ), // Larger, bolder black title
+            ),
             content: Form(
               key: _connectPatientFormKey,
               child: TextFormField(
                 controller: _connectPatientIdController,
-                decoration: _inputDecoration('ID Unik Pasien (contoh: PSN...)'),
+                decoration: _inputDecoration(
+                  'ID Unik Pasien (contoh: PSN...)',
+                  prefixIcon: Icon(
+                    Icons.qr_code_scanner,
+                    color: AppColors.grey,
+                  ), // Grey scanner icon
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'ID Pasien wajib diisi';
@@ -122,6 +174,12 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.grey, // Grey text
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ), // Slightly bolder text
+                ),
                 child: const Text('Batal'),
               ),
               BlocBuilder<FamilyBloc, FamilyState>(
@@ -129,7 +187,7 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
                   return ElevatedButton(
                     onPressed:
                         state is PatientConnecting
-                            ? null
+                            ? null // Disable tombol saat sedang loading
                             : () {
                               if (_connectPatientFormKey.currentState!
                                   .validate()) {
@@ -144,6 +202,18 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
                                 );
                               }
                             },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          AppColors.deepPurple, // Custom deep purple button
+                      foregroundColor: AppColors.white, // White text
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ), // More rounded button
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
                     child: Text(
                       state is PatientConnecting
                           ? 'Menghubungkan...'
@@ -162,13 +232,31 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor:
+          AppColors.lightSheet, // Light background for overall page
       appBar: AppBar(
-        title: const Text('Dashboard Keluarga'),
+        // Set AppBar background explicitly to deepPurple
+        backgroundColor: AppColors.deepPurple,
+        elevation: 0, // No shadow
+        title: const Text(
+          'Dashboard Keluarga',
+          style: TextStyle(
+            color: AppColors.white, // Title color is white for contrast
+            fontWeight: FontWeight.w900, // Extra bold title
+            fontSize: 24, // Larger title for prominence
+            letterSpacing: 1.2, // Slight letter spacing for style
+          ),
+        ),
+        centerTitle: true,
+        iconTheme: const IconThemeData(
+          color: AppColors.white,
+        ), // Icons are white
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, size: 28), // Larger logout icon
             onPressed: () async {
-              await _secureStorage.deleteAll();
+              // This onPressed is now correctly functional as AppBar is top-level
+              await _secureStorage.deleteAll(); // Ensure all data is cleared
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -179,385 +267,548 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
           ),
         ],
       ),
-
-      body: BlocConsumer<FamilyBloc, FamilyState>(
-        listener: (context, state) {
-          if (state is FamilyLoaded) {
-            setState(() {
-              _familyUserData = state.familyUserData;
-            });
-            log(
-              'KeluargaHomeScreen: FamilyLoaded state received. _familyUserData updated.',
-            );
-          } else if (state is ConnectedPatientsLoaded) {
-            setState(() {
-              _connectedPatients = state.patients;
-            });
-            log(
-              'KeluargaHomeScreen: ConnectedPatientsLoaded state received. _connectedPatients updated. Count: ${_connectedPatients.length}',
-            );
-          } else if (state is FamilyError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Error: ${state.message}')));
-            log('KeluargaHomeScreen: FamilyError: ${state.message}');
-            setState(() {
-              _familyUserData = null;
-            });
-          } else if (state is ConnectedPatientsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error memuat pasien: ${state.message}')),
-            );
-            log('KeluargaHomeScreen: ConnectedPatientsError: ${state.message}');
-            setState(() {
-              _connectedPatients = [];
-            });
-          } else if (state is PatientConnectionSuccess) {
-            log(
-              'KeluargaHomeScreen: PatientConnectionSuccess received. Dialog should close.',
-            );
-          } else if (state is PatientConnectionFailure) {
-            log(
-              'KeluargaHomeScreen: PatientConnectionFailure received. Error: ${state.error}',
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is FamilyLoading ||
-              (state is ConnectedPatientsLoading && _familyUserData == null)) {
-            log(
-              'KeluargaHomeScreen: Displaying full screen loading. Current State: ${state.runtimeType}',
-            ); //Log state loading
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple),
-              ),
-            );
-          }
-
-          if (_familyUserData == null) {
-            log(
-              'KeluargaHomeScreen: _familyUserData is null, showing initial data load error.',
-            );
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Gagal memuat data profil keluarga. Mohon pastikan Anda sudah login dengan akun keluarga yang valid.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16, color: Colors.red),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<FamilyBloc>().add(
-                          const LoadFamilyDataRequested(),
-                        );
-                      },
-                      child: const Text('Coba Lagi'),
-                    ),
+      body: Stack(
+        // Using Stack for layered, dynamic background and foreground elements
+        children: [
+          // Background Gradient/Wave (Top Section)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 280, // Height of the purple wave/area
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.deepPurple.withOpacity(0.9), // Darker start
+                    AppColors.deepPurple.withOpacity(0.6), // Lighter end
                   ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
+                // Organic, irregular shape for the bottom edge
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.elliptical(500, 150),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.deepPurple.withOpacity(0.6),
+                    blurRadius:
+                        30, // Increased blur for a softer, glowing effect
+                    offset: const Offset(0, 15), // More pronounced shadow
+                  ),
+                ],
               ),
-            );
-          }
+            ),
+          ),
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              context.read<FamilyBloc>().add(const LoadFamilyDataRequested());
-            },
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Halo, ${_familyUserData!.namaKeluarga ?? _familyUserData!.username ?? 'Anggota Keluarga'}!', // INILOH: Menggunakan _familyUserData
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (_familyUserData!.idKeluarga != null)
-                    Text(
-                      'ID Keluarga Anda: ${_familyUserData!.idKeluarga}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.blueGrey,
-                      ),
-                    ),
-                  const Text(
-                    'Pantau kesehatan anggota keluarga Anda di sini.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 30),
-
-                  _buildFeatureCard(
-                    context,
-                    icon: Icons.person_add_alt_1_outlined,
-                    title: 'Hubungkan Pasien Baru',
-                    subtitle:
-                        'Tambahkan pasien yang ingin Anda pantau dengan kode unik pasien (PSN...).',
-                    onTap: () => _showConnectPatientDialog(context),
-                  ),
-                  const SizedBox(height: 20),
-
-                  Text(
-                    'Pasien yang Terhubung:',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  BlocBuilder<FamilyBloc, FamilyState>(
-                    buildWhen:
-                        (previous, current) =>
-                            current is ConnectedPatientsLoaded ||
-                            current is ConnectedPatientsError ||
-                            current is ConnectedPatientsLoading,
-                    builder: (context, state) {
-                      if (state is ConnectedPatientsLoading &&
-                          _familyUserData != null) {
-                        log(
-                          'KeluargaHomeScreen: Displaying connected patients loading. State: ${state.runtimeType}',
-                        ); //  Log loading pasien
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.deepPurple,
-                            ),
-                          ),
-                        );
-                      }
-                      //  Untuk menampilkan daftar pasien dari _connectedPatients
-                      else if (state is ConnectedPatientsLoaded ||
-                          _connectedPatients.isNotEmpty) {
-                        if (_connectedPatients.isEmpty) {
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: Text(
-                                'Belum ada pasien yang terhubung. Hubungkan pasien baru di atas.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          );
-                        }
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _connectedPatients.length,
-                          itemBuilder: (context, index) {
-                            final patient = _connectedPatients[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 8.0),
-                              elevation: 2.0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                              ),
-                              child: ExpansionTile(
-                                leading: const Icon(Icons.person),
-                                title: Text(patient.nama ?? 'Nama Pasien'),
-                                subtitle: Text(
-                                  'ID Unik: ${patient.idUnik ?? 'N/A'}',
+          // Scrollable Content
+          Positioned.fill(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                context.read<FamilyBloc>().add(const LoadFamilyDataRequested());
+              },
+              color: AppColors.white, // White indicator on purple background
+              backgroundColor: AppColors.deepPurple, // Background of indicator
+              child: SingleChildScrollView(
+                // Adjust top padding to leave space for the curved background and initial part of the welcome card
+                padding: const EdgeInsets.only(
+                  top: 100,
+                  left: 24.0,
+                  right: 24.0,
+                  bottom: 24.0,
+                ),
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .center, // Center the family welcome card
+                  children: [
+                    // Welcome message section - now a distinct, floating card
+                    BlocBuilder<FamilyBloc, FamilyState>(
+                      buildWhen:
+                          (previous, current) =>
+                              current is FamilyLoaded || current is FamilyError,
+                      builder: (context, state) {
+                        if (state is FamilyLoaded &&
+                            state.familyUserData != null) {
+                          _familyUserData =
+                              state.familyUserData; // Update user data
+                          return Container(
+                            // Fixed size for a perfect circle/oval for the family welcome card
+                            height:
+                                MediaQuery.of(context).size.width *
+                                0.55, // Adjusted height to make it more circular/oval based on width
+                            width:
+                                MediaQuery.of(context).size.width *
+                                0.55, // Adjusted width for oval shape
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 15,
+                              vertical: 25,
+                            ), // Adjusted padding to fit content better
+                            decoration: BoxDecoration(
+                              color: AppColors.white, // Solid white background
+                              shape:
+                                  BoxShape.circle, // Make it a perfect circle
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.black.withOpacity(
+                                    0.18,
+                                  ), // Stronger shadow for floating effect
+                                  blurRadius: 25, // More blur
+                                  offset: const Offset(
+                                    0,
+                                    12,
+                                  ), // More vertical offset
                                 ),
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Tanggal Lahir: ${patient.tanggalLahir != null ? DateFormat('yyyy-MM-dd').format(DateTime.parse(patient.tanggalLahir!)) : 'N/A'}',
-                                        ),
-                                        Text(
-                                          'Jenis Kelamin: ${patient.jenisKelamin ?? 'N/A'}',
-                                        ),
-                                        Text(
-                                          'No. Telepon: ${patient.nomorTelepon ?? 'N/A'}',
-                                        ),
-                                        Text(
-                                          'Alamat: ${patient.alamat ?? 'N/A'}',
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceAround,
-                                          children: [
-                                            _buildSmallFeatureButton(
-                                              context,
-                                              icon: Icons.access_time_outlined,
-                                              label: 'Obat',
-                                              onTap: () {
-                                                if (patient.idGlobal != null &&
-                                                    patient.idUnik != null) {
-                                                  context.push(
-                                                    MedicationPage(
-                                                      patientGlobalId:
-                                                          patient.idGlobal!,
-                                                      initialPatientUniqueId:
-                                                          patient.idUnik!,
-                                                      isFamilyRole: true,
-                                                    ),
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'ID Global Pasien tidak tersedia.',
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                            ),
-                                            _buildSmallFeatureButton(
-                                              context,
-                                              icon: Icons.history_edu_outlined,
-                                              label: 'Riwayat',
-                                              onTap: () {
-                                                if (patient.idGlobal != null &&
-                                                    patient.idUnik != null) {
-                                                  context.push(
-                                                    MedicationPage(
-                                                      patientGlobalId:
-                                                          patient.idGlobal!,
-                                                      initialPatientUniqueId:
-                                                          patient.idUnik!,
-                                                      isHistory: true,
-                                                      isFamilyRole: true,
-                                                    ),
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'ID Pasien tidak tersedia untuk fitur ini.',
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                            ),
-                                            _buildSmallFeatureButton(
-                                              context,
-                                              icon: Icons.location_on_outlined,
-                                              label: 'Lokasi',
-                                              onTap: () {
-                                                if (patient.idGlobal != null) {
-                                                  context.push(
-                                                    PasienLocationPage(
-                                                      patientGlobalId:
-                                                          patient.idGlobal!,
-                                                    ),
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'ID Global Pasien tidak tersedia.',
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                              ],
+                              border: Border.all(
+                                color: AppColors.deepPurple,
+                                width: 2.5,
+                              ), // Prominent deep purple border
+                            ),
+                            child: Column(
+                              mainAxisAlignment:
+                                  MainAxisAlignment
+                                      .center, // Center content vertically
+                              mainAxisSize: MainAxisSize.min, // Wrap content
+                              crossAxisAlignment:
+                                  CrossAxisAlignment
+                                      .center, // Center text horizontally within the card
+                              children: [
+                                Text(
+                                  'Halo,',
+                                  style: TextStyle(
+                                    fontSize:
+                                        16, // Slightly smaller for better fit
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _familyUserData!.namaKeluarga ??
+                                      _familyUserData!.username ??
+                                      'Anggota Keluarga',
+                                  style: const TextStyle(
+                                    fontSize:
+                                        22, // Adjusted size for circular card
+                                    fontWeight:
+                                        FontWeight
+                                            .w900, // Extra bold for strong impact
+                                    color:
+                                        AppColors
+                                            .deepPurple, // Deep purple for emphasis
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                if (_familyUserData!.idKeluarga != null) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'ID Keluarga Anda: ${_familyUserData!.idKeluarga}',
+                                    style: const TextStyle(
+                                      fontSize:
+                                          14, // Adjusted size for better fit
+                                      color: AppColors.grey,
                                     ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ],
-                              ),
-                            );
-                          },
-                        );
-                      } else if (state is ConnectedPatientsError) {
-                        log(
-                          'KeluargaHomeScreen: ConnectedPatientsError, showing error message. Message: ${state.message}',
-                        ); // Log error
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Pantau kesehatan anggota keluarga Anda di sini.',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.grey,
+                                  ), // Adjusted size for better fit
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          );
+                        } else if (state is FamilyError) {
+                          log(
+                            'KeluargaHomeScreen: FamilyError: ${state.message}',
+                          );
+                          return Container(
+                            // Error card styling
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 25,
+                              vertical: 20,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16.0),
+                              border: Border.all(color: AppColors.red),
+                            ),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Icon(
-                                  Icons.warning_amber,
-                                  color: Colors.orange,
+                                  Icons.error_outline,
+                                  color: AppColors.red,
                                   size: 48,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Gagal memuat pasien: ${state.message}',
+                                  'Gagal memuat data profil keluarga. Mohon pastikan Anda sudah login dengan akun keluarga yang valid. Error: ${state.message}',
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     fontSize: 16,
-                                    color: Colors.orange,
+                                    color: AppColors.red,
                                   ),
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton(
                                   onPressed: () {
                                     context.read<FamilyBloc>().add(
-                                      const LoadConnectedPatientsRequested(),
+                                      const LoadFamilyDataRequested(),
                                     );
                                   },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.red,
+                                    foregroundColor: AppColors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
                                   child: const Text('Coba Lagi'),
                                 ),
                               ],
                             ),
-                          ),
+                          );
+                        }
+                        return const SizedBox.shrink(); // Fallback for initial/other states
+                      },
+                    ),
+                    const SizedBox(height: 35), // Spacing after welcome card
+                    // Feature Card: Connect New Patient
+                    _buildFeatureCard(
+                      context,
+                      icon: Icons.person_add_alt_1_outlined,
+                      title: 'Hubungkan Pasien Baru',
+                      subtitle:
+                          'Tambahkan pasien yang ingin Anda pantau dengan kode unik pasien (PSN...).',
+                      onTap: () => _showConnectPatientDialog(context),
+                    ),
+                    const SizedBox(height: 20), // Spacing between cards
+                    // "Pasien yang Terhubung" Section Title
+                    Align(
+                      alignment: Alignment.centerLeft, // Align title to left
+                      child: Text(
+                        'Pasien yang Terhubung',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.deepPurple,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10), // Spacing below title
+                    // Connected Patients List (BlocBuilder)
+                    BlocBuilder<FamilyBloc, FamilyState>(
+                      buildWhen:
+                          (previous, current) =>
+                              current is ConnectedPatientsLoaded ||
+                              current is ConnectedPatientsError ||
+                              current is ConnectedPatientsLoading,
+                      builder: (context, state) {
+                        if (state is ConnectedPatientsLoading) {
+                          log(
+                            'KeluargaHomeScreen: Displaying connected patients loading. State: ${state.runtimeType}',
+                          );
+                          return Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20.0),
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.deepPurple,
+                                ), // Deep purple loading
+                              ),
+                            ),
+                          );
+                        } else if (_connectedPatients.isEmpty) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text(
+                                'Belum ada pasien yang terhubung. Hubungkan pasien baru di atas.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppColors.grey,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          );
+                        } else if (state is ConnectedPatientsError) {
+                          log(
+                            'KeluargaHomeScreen: ConnectedPatientsError: ${state.message}',
+                          );
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber,
+                                    color: AppColors.redCustom,
+                                    size: 48,
+                                  ), // Warning icon
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Gagal memuat pasien: ${state.message}',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: AppColors.redCustom,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      context.read<FamilyBloc>().add(
+                                        const LoadConnectedPatientsRequested(),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.deepPurple,
+                                      foregroundColor: AppColors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text('Coba Lagi'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          physics:
+                              const NeverScrollableScrollPhysics(), // Important for nested scroll views
+                          itemCount: _connectedPatients.length,
+                          itemBuilder: (context, index) {
+                            final patient = _connectedPatients[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 8.0),
+                              elevation: 6.0, // Increased elevation
+                              shadowColor: AppColors.deepPurple.withOpacity(
+                                0.2,
+                              ), // Soft shadow
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  16.0,
+                                ), // Rounded corners
+                                side: const BorderSide(
+                                  color: AppColors.light,
+                                  width: 0.5,
+                                ), // Subtle border
+                              ),
+                              child: ExpansionTile(
+                                tilePadding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  10,
+                                  20,
+                                  10,
+                                ), // Adjusted padding
+                                leading: Container(
+                                  padding: const EdgeInsets.all(
+                                    8.0,
+                                  ), // Padding for icon background
+                                  decoration: BoxDecoration(
+                                    color: AppColors.deepPurple.withOpacity(
+                                      0.1,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: AppColors.deepPurple,
+                                    size: 30,
+                                  ), // Deep purple icon
+                                ),
+                                title: Text(
+                                  patient.nama ?? 'Nama Pasien Tidak Diketahui',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: AppColors.black,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'ID Unik: ${patient.idUnik ?? 'N/A'}',
+                                  style: const TextStyle(
+                                    color: AppColors.grey,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                childrenPadding: const EdgeInsets.all(
+                                  20.0,
+                                ), // Padding for expanded content
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _buildDetailRow(
+                                        'Tanggal Lahir',
+                                        patient.tanggalLahir != null
+                                            ? DateFormat('dd MMMM yyyy').format(
+                                              DateTime.parse(
+                                                patient.tanggalLahir!,
+                                              ),
+                                            )
+                                            : 'N/A',
+                                        Icons.cake_outlined,
+                                      ),
+                                      _buildDetailRow(
+                                        'Jenis Kelamin',
+                                        patient.jenisKelamin ?? 'N/A',
+                                        Icons.transgender_outlined,
+                                      ),
+                                      _buildDetailRow(
+                                        'No. Telepon',
+                                        patient.nomorTelepon ?? 'N/A',
+                                        Icons.phone_outlined,
+                                      ),
+                                      _buildDetailRow(
+                                        'Alamat',
+                                        patient.alamat ?? 'N/A',
+                                        Icons.location_city_outlined,
+                                      ),
+                                      const SizedBox(
+                                        height: 20,
+                                      ), // More spacing before buttons
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceAround,
+                                        children: [
+                                          _buildSmallFeatureButton(
+                                            context,
+                                            icon: Icons.medication_outlined,
+                                            label: 'Obat',
+                                            onTap: () {
+                                              if (patient.idGlobal != null &&
+                                                  patient.idUnik != null) {
+                                                context.push(
+                                                  MedicationPage(
+                                                    patientGlobalId:
+                                                        patient.idGlobal!,
+                                                    initialPatientUniqueId:
+                                                        patient.idUnik!,
+                                                    isFamilyRole: true,
+                                                  ),
+                                                );
+                                              } else {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'ID Global Pasien atau ID Unik tidak tersedia.',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                          _buildSmallFeatureButton(
+                                            context,
+                                            icon: Icons.history_edu_outlined,
+                                            label: 'Riwayat',
+                                            onTap: () {
+                                              if (patient.idGlobal != null &&
+                                                  patient.idUnik != null) {
+                                                context.push(
+                                                  MedicationPage(
+                                                    patientGlobalId:
+                                                        patient.idGlobal!,
+                                                    initialPatientUniqueId:
+                                                        patient.idUnik!,
+                                                    isHistory: true,
+                                                    isFamilyRole: true,
+                                                  ),
+                                                );
+                                              } else {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'ID Pasien tidak tersedia untuk fitur ini.',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                          _buildSmallFeatureButton(
+                                            context,
+                                            icon: Icons.location_on_outlined,
+                                            label: 'Lokasi',
+                                            onTap: () {
+                                              if (patient.idGlobal != null) {
+                                                context.push(
+                                                  PasienLocationPage(
+                                                    patientGlobalId:
+                                                        patient.idGlobal!,
+                                                  ),
+                                                );
+                                              } else {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'ID Global Pasien tidak tersedia.',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         );
-                      }
-                      log(
-                        'KeluargaHomeScreen: ConnectedPatients BlocBuilder fallback. Current State: ${state.runtimeType}',
-                      );
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                  const SizedBox(height: 30),
-                  _buildFeatureCard(
-                    context,
-                    icon: Icons.person_outline,
-                    title: 'Profil Saya',
-                    subtitle:
-                        'Lihat dan perbarui informasi profil pribadi Anda.',
-                    onTap: () {
-                      context.push(const KeluargaProfileScreen());
-                    },
-                  ),
-                ],
+                      },
+                    ),
+                    const SizedBox(height: 30), // Spacing before profile card
+                    // Feature Card: My Profile
+                    _buildFeatureCard(
+                      context,
+                      icon:
+                          Icons
+                              .person_pin_outlined, // Consistent with doctor dashboard
+                      title: 'Profil Saya',
+                      subtitle:
+                          'Lihat dan perbarui informasi profil pribadi Anda.',
+                      onTap: () {
+                        context.push(const KeluargaProfileScreen());
+                      },
+                    ),
+                    const SizedBox(height: 40), // More spacing at the bottom
+                  ],
+                ),
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
-  // Widget  card
+  // Widget pembangun kartu fitur besar (reused and enhanced from DokterHomeScreen)
   Widget _buildFeatureCard(
     BuildContext context, {
     required IconData icon,
@@ -566,18 +817,62 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
     required VoidCallback onTap,
   }) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+      margin: const EdgeInsets.symmetric(
+        vertical: 8.0, // Reduced vertical margin slightly
+        horizontal: 0.0,
+      ),
+      elevation: 10.0, // Slightly reduced elevation for feature cards
+      shadowColor: AppColors.deepPurple.withOpacity(
+        0.4,
+      ), // Stronger, yet soft purple shadow for depth
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          20.0,
+        ), // Slightly reduced border radius
+        side: const BorderSide(
+          color: AppColors.light,
+          width: 0.8,
+        ), // Slightly thicker light border
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10.0),
+        borderRadius: BorderRadius.circular(
+          20.0,
+        ), // Match card border radius for ripple effect
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 22.0,
+            vertical: 20.0,
+          ), // Reduced padding slightly
           child: Row(
             children: [
-              Icon(icon, size: 40, color: Theme.of(context).primaryColor),
-              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.all(
+                  12.0,
+                ), // Reduced icon container padding
+                decoration: BoxDecoration(
+                  color: AppColors.deepPurple.withOpacity(
+                    0.2,
+                  ), // Consistent opacity for icon background
+                  shape: BoxShape.circle, // Circular background for the icon
+                  boxShadow: [
+                    BoxShadow(
+                      // Subtle shadow for the icon container
+                      color: AppColors.deepPurple.withOpacity(0.2),
+                      blurRadius: 5,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  size: 36, // Slightly reduced icon size
+                  color: AppColors.deepPurple,
+                ),
+              ),
+              const SizedBox(
+                width: 18,
+              ), // Slightly reduced spacing between icon and text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,17 +880,29 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 20, // Reduced font size for card title
                         fontWeight: FontWeight.bold,
+                        color: AppColors.black,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(
+                      height: 6,
+                    ), // Spacing between title and subtitle
                     Text(
                       subtitle,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: const TextStyle(
+                        fontSize: 15, // Reduced font size for subtitles
+                        color: AppColors.grey,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.light,
+                size: 22, // Slightly reduced arrow icon size
               ),
             ],
           ),
@@ -604,7 +911,7 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
     );
   }
 
-  // Widget small card button
+  // Widget pembangun tombol fitur kecil di dalam ExpansionTile (enhanced)
   Widget _buildSmallFeatureButton(
     BuildContext context, {
     required IconData icon,
@@ -615,17 +922,67 @@ class _KeluargaHomeScreenState extends State<KeluargaHomeScreen> {
       children: [
         InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8.0),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Icon(icon, size: 30, color: Theme.of(context).primaryColor),
+          borderRadius: BorderRadius.circular(16.0), // More rounded
+          child: Container(
+            padding: const EdgeInsets.all(10.0), // Adjusted padding
+            decoration: BoxDecoration(
+              color: AppColors.deepPurple.withOpacity(
+                0.1,
+              ), // Lighter background
+              borderRadius: BorderRadius.circular(
+                16.0,
+              ), // Consistent rounded corners
+              border: Border.all(
+                color: AppColors.deepPurple.withOpacity(0.3),
+                width: 0.5,
+              ), // Subtle border
+            ),
+            child: Icon(
+              icon,
+              size: 30, // Consistent icon size
+              color: AppColors.deepPurple, // Custom deep purple color
+            ),
           ),
         ),
+        const SizedBox(height: 4), // Reduced spacing
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.grey, // Grey text
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
+    );
+  }
+
+  // Helper untuk menampilkan detail pasien dalam ExpansionTile (enhanced)
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 6.0,
+      ), // Adjusted vertical padding
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: AppColors.deepPurple,
+          ), // Custom deep purple icon
+          const SizedBox(width: 10), // Adjusted spacing
+          Expanded(
+            child: Text(
+              '$label: $value',
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.black,
+              ), // Black text
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

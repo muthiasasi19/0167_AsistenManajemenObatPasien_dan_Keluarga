@@ -23,7 +23,8 @@ final class MedicationHistoryLoaded extends MedicationState {
 
 final class MedicationActionSuccess extends MedicationState {
   final String message;
-  final dynamic data;
+  final dynamic
+  data; // Sesuaikan tipe data jika Anda tahu apa yang dikembalikan
   MedicationActionSuccess({required this.message, this.data});
 }
 

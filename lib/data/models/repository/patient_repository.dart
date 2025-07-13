@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:dartz/dartz.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:manajemen_obat/service/Storage_Helper.dart';
 import 'package:manajemen_obat/service/service_http_client.dart';
 import 'package:manajemen_obat/data/models/response/patient_response_model.dart';
 import 'package:manajemen_obat/data/models/response/patient_search_result_model.dart';
@@ -17,12 +18,13 @@ class PatientRepository {
     final userDataString = await _secureStorage.read(key: 'userData');
     if (userDataString != null) {
       final userData = jsonDecode(userDataString);
+      // Asumsi 'id_dokter' ada di userData untuk role dokter, jika tidak ada, akan null
       return userData['id_dokter']?.toString();
     }
     return null;
   }
 
-  // Mendapatkan Dokter Terhubung untuk Pasien
+  //  Mendapatkan Dokter Terhubung untuk Pasien ---
   Future<Either<String, DoctorData>> getConnectedDoctor(
     String patientUniqueId,
   ) async {
@@ -43,7 +45,8 @@ class PatientRepository {
 
       if (response.statusCode == 200) {
         final responseBody = jsonDecode(response.body);
-        final dynamic data = responseBody['data'];
+        final dynamic data =
+            responseBody['data']; // Bisa null jika tidak ada dokter terhubung
 
         if (data != null) {
           final doctor = DoctorData.fromJson(data);
@@ -55,6 +58,7 @@ class PatientRepository {
           developer.log(
             "PatientRepository - getConnectedDoctor: Pasien belum terhubung dengan dokter manapun (data: null).",
           );
+          // Return Left dengan pesan yang sesuai, bukan Left(null)
           return const Left('Pasien belum terhubung dengan dokter manapun.');
         }
       } else {
@@ -219,6 +223,20 @@ class PatientRepository {
       return const Left(
         "Terjadi kesalahan saat mencari pasien terhubung. Cek koneksi atau backend.",
       );
+    }
+  }
+
+  //Profil pasien
+  Future<Patient> getPatientProfile() async {
+    try {
+      final response = await _httpClient.get(
+        // <<-- Menggunakan _httpClient, token otomatis ditangani
+        '/patient/profile',
+      );
+      return Patient.fromJson(response.body);
+    } catch (e) {
+      print('Error fetching patient profile: $e'); // Untuk debugging
+      rethrow;
     }
   }
 }

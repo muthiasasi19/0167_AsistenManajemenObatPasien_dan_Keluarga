@@ -6,6 +6,7 @@ import 'dart:developer';
 import 'package:manajemen_obat/data/models/response/patient_response_model.dart';
 import 'package:manajemen_obat/data/models/response/patient_search_result_model.dart';
 part 'patient_event.dart';
+
 part 'patient_state.dart';
 
 class PatientBloc extends Bloc<PatientEvent, PatientState> {
@@ -13,6 +14,8 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
 
   PatientBloc({required this.patientRepository})
     : super(const PatientInitial()) {
+    // Tambahkan const
+
     on<PatientsRequested>(_onPatientsRequested);
 
     on<ConnectPatientRequested>(_onConnectPatientRequested);
@@ -31,19 +34,38 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
       "PatientBloc: Menerima GetConnectedDoctorRequested. Memulai pemuatan data dokter terhubung.",
     );
 
+    // Karena patientUniqueId di repo tidak terpakai, bisa diisi dummy atau null
     final result = await patientRepository.getConnectedDoctor('patient_id');
 
     result.fold(
       (errorMessage) {
         log("PatientBloc: GetConnectedDoctor Error: $errorMessage");
+        // Emit error state, pastikan ConnectedDoctorError sudah didefinisikan
         emit(ConnectedDoctorError(message: errorMessage));
       },
       (doctorData) {
         log(
           "PatientBloc: GetConnectedDoctor Success: Doctor ${doctorData.name} found. Spesialisasi: ${doctorData.specialization}",
         );
+        // Emit loaded state, pastikan ConnectedDoctorLoaded sudah didefinisikan
         emit(ConnectedDoctorLoaded(doctorData: doctorData));
       },
+    );
+  }
+
+  // profil
+  Future<void> _onLoadPatientProfileRequested(
+    LoadPatientProfileRequested event,
+    Emitter<PatientState> emit,
+  ) async {
+    emit(const PatientLoading());
+    final result =
+        await patientRepository.getPatientProfile(); // Panggil repository
+
+    result.fold(
+      (errorMessage) => emit(PatientError(message: errorMessage)),
+
+      (responseModel) => emit(PatientsLoaded(patients: responseModel.data)),
     );
   }
 
@@ -98,7 +120,7 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
       return;
     }
 
-    emit(const PatientLoading());
+    emit(const PatientLoading()); // Tambahkan const
 
     final result = await patientRepository.searchConnectedPatients(
       event.queryNama,

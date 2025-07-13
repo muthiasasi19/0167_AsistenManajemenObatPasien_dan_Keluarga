@@ -1,3 +1,4 @@
+// lib/bloc/doctor/doctor_state.dart
 part of 'doctor_bloc.dart';
 
 sealed class DoctorState {
@@ -11,7 +12,8 @@ final class DoctorInitial extends DoctorState {
 
 // State Sedang Memuat Data/Melakukan Operasi
 final class DoctorLoading extends DoctorState {
-  final String? message;
+  final String?
+  message; // Optional message for loading state (e.g., "Mencari pasien...")
   const DoctorLoading({this.message});
 }
 
@@ -53,6 +55,7 @@ final class DoctorPatientMedicationsLoaded extends DoctorState {
 
 // State Ketika Riwayat Konsumsi Obat Pasien Berhasil Dimuat
 final class DoctorPatientMedicationHistoryLoaded extends DoctorState {
-  final List<MedicationHistoryData> medicationHistory;
+  final List<MedicationHistoryData> // UBAH TIPE DATA INI!
+  medicationHistory;
   const DoctorPatientMedicationHistoryLoaded({required this.medicationHistory});
 }

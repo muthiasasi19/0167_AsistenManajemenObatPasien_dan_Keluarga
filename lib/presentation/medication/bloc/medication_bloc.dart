@@ -38,7 +38,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
       );
       result.fold(
         (l) => emit(MedicationError(message: l)),
-        (r) => emit(MedicationSessionsLoaded(sessions: r.data)),
+        (r) => emit(
+          MedicationSessionsLoaded(sessions: r.data),
+        ), // Menggunakan MedicationSessionsLoaded
       );
     } else {
       final result = await medicationRepository.getMedicationsByPatientId(
@@ -47,7 +49,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
       );
       result.fold(
         (l) => emit(MedicationError(message: l)),
-        (r) => emit(MedicationsLoaded(medications: r.data)),
+        (r) => emit(
+          MedicationsLoaded(medications: r.data),
+        ), // Menggunakan MedicationsLoaded
       );
     }
   }
@@ -57,13 +61,18 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
     Emitter<MedicationState> emit,
   ) async {
     emit(MedicationLoading());
+    // Mengubah emit state menjadi MedicationHistoryLoaded untuk tipe data yang benar
     final result = await medicationRepository.getMedicationHistoryByPatientId(
       patientGlobalId: event.patientGlobalId,
       patientUniqueId: event.patientUniqueId,
     );
     result.fold(
       (l) => emit(MedicationError(message: l)),
-      (r) => emit(MedicationHistoryLoaded(history: r.data)),
+      (r) => emit(
+        MedicationHistoryLoaded(
+          history: r.data,
+        ), // Hapus .cast<MedicationHistoryData>()
+      ),
     );
   }
 
@@ -85,7 +94,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
 
     final result = await medicationRepository.addMedication(
       event.patientUniqueId!,
-      event.request.copyWith(photoFile: event.photoFile),
+      event.request.copyWith(
+        photoFile: event.photoFile,
+      ), // Teruskan photoFile ke repository
     );
 
     result.fold(
@@ -113,7 +124,10 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
 
     final result = await medicationRepository.updateMedication(
       event.medicationId,
-      event.request,
+      event.request.copyWith(
+        photoFile: event.photoFile,
+        photoUrl: event.existingPhotoUrl, // Sertakan URL foto yang sudah ada
+      ),
     );
 
     result.fold(
@@ -168,11 +182,14 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
   ) async {
     emit(MedicationLoading());
     try {
-      final String statusToSend = event.isTaken ? 'taken' : 'pending';
+      final String statusToSend =
+          event.isTaken
+              ? 'taken'
+              : 'pending'; // Jika isTaken false, berarti undo (set ke 'pending')
 
       final markResult = await medicationRepository.markMedicationConsumption(
         event.medicationId,
-        statusToSend,
+        statusToSend, // Menggunakan status yang sudah ditentukan
         event.scheduledTime,
         event.notes,
       );

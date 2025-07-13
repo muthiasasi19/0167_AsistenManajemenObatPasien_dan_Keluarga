@@ -8,12 +8,19 @@ sealed class PatientEvent {
 class ConnectPatientRequested extends PatientEvent {
   final String patientUniqueId; // ID unik pasien yang ingin dihubungkan
 
-  const ConnectPatientRequested({required this.patientUniqueId});
+  const ConnectPatientRequested({
+    required this.patientUniqueId,
+  }); // Tambahkan const
+}
+
+// Event untuk memuat data profil pasien yang sedang login
+class LoadPatientProfileRequested extends PatientEvent {
+  const LoadPatientProfileRequested();
 }
 
 // Event ketika request untuk memuat daftar pasien dikirim
 class PatientsRequested extends PatientEvent {
-  const PatientsRequested();
+  const PatientsRequested(); // Tambahkan const
 }
 
 class SearchConnectedPatientsRequested extends PatientEvent {

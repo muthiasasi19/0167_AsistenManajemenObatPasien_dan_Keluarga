@@ -32,4 +32,6 @@ class AppColors {
   static const Color subtitle = Color(0xff7890CD);
 
   static const Color stroke = Color(0xffDBDBDB);
+
+  static const Color deepPurple = Color(0xFF898AC4);
 }

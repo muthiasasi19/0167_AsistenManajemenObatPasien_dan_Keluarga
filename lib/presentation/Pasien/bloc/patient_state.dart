@@ -1,14 +1,22 @@
 part of 'patient_bloc.dart';
 
 sealed class PatientState {
+  // Kelas dasar untuk semua state pasien, mengimplementasikan Equatable
   const PatientState();
 
-  List<Object> get props => [];
+  // @override // Tidak perlu override jika Equatable tidak diimplementasikan secara langsung di sini
+  List<Object> get props => []; // Implementasi default untuk Equatable
 }
 
 // State Awal (Initial)
 final class PatientInitial extends PatientState {
   const PatientInitial();
+}
+
+// satte profil
+final class PatientProfileLoaded extends PatientState {
+  final Patient patientData; // Data profil pasien yang login
+  const PatientProfileLoaded({required this.patientData});
 }
 
 // State Sedang Memuat (Loading)
@@ -38,10 +46,14 @@ final class PatientsLoaded extends PatientState {
 // State Koneksi Pasien Berhasil
 final class PatientConnectionSuccess extends PatientState {
   final String message;
+  // Jika `connectedPatient` dari backend bisa berupa objek Patient,
+  // maka lebih baik ubah dynamic menjadi Patient?
+  // --- PERBAIKAN: Ubah dynamic menjadi Patient? jika model Patient digunakan di sini ---
   final Patient? connectedPatient;
+  // --- AKHIR PERBAIKAN ---
   const PatientConnectionSuccess({
     required this.message,
-    this.connectedPatient,
+    this.connectedPatient, // Ubah ke this.connectedPatient jika properti bisa null
   });
 
   @override
@@ -50,6 +62,7 @@ final class PatientConnectionSuccess extends PatientState {
 
 // State Hasil Pencarian Pasien Terhubung Berhasil Dimuat
 final class ConnectedPatientsSearchLoaded extends PatientState {
+  // Menggunakan model PatientSearchResult dari patient_response_model.dart
   final List<PatientSearchResult> searchResults;
 
   const ConnectedPatientsSearchLoaded({required this.searchResults});
@@ -59,6 +72,7 @@ final class ConnectedPatientsSearchLoaded extends PatientState {
 }
 
 // State Error Pencarian Pasien Terhubung
+// --- PERBAIKAN: Pindahkan definisi kelas ini dari patient_bloc.dart ---
 final class ConnectedPatientsSearchError extends PatientState {
   final String message;
 

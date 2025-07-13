@@ -6,7 +6,8 @@ sealed class MedicationEvent {
 
 class GetMedicationsRequested extends MedicationEvent {
   final String? patientUniqueId;
-  final int? patientGlobalId;
+  final int?
+  patientGlobalId; // Tetap sertakan jika memang ada niat untuk digunakan di masa depan/logging
   final bool isForPatientOrFamilyToday;
   final bool isForDoctorScheduled;
   const GetMedicationsRequested({
@@ -14,9 +15,9 @@ class GetMedicationsRequested extends MedicationEvent {
 
     this.patientGlobalId,
 
-    this.isForPatientOrFamilyToday = false,
+    this.isForPatientOrFamilyToday = false, // Default false
 
-    this.isForDoctorScheduled = false,
+    this.isForDoctorScheduled = false, // Default false
   }) : assert(
          patientUniqueId != null || patientGlobalId != null,
 
@@ -25,8 +26,10 @@ class GetMedicationsRequested extends MedicationEvent {
 }
 
 class GetMedicationHistoryRequested extends MedicationEvent {
+  // Sama seperti GetMedicationsRequested, repository saat ini hanya memanfaatkan patientUniqueId
+  // (atau currentUser.idPasien).
   final String? patientUniqueId;
-  final int? patientGlobalId;
+  final int? patientGlobalId; // Tetap sertakan
 
   const GetMedicationHistoryRequested({
     this.patientUniqueId,
@@ -35,10 +38,14 @@ class GetMedicationHistoryRequested extends MedicationEvent {
          patientUniqueId != null || patientGlobalId != null,
          'patientUniqueId or patientGlobalId must be provided for GetMedicationHistoryRequested',
        );
+
+  // Jika Anda menggunakan equatable, tambahkan props
+  // @override
+  // List<Object?> get props => [patientUniqueId, patientGlobalId];
 }
 
 class AddMedicationRequested extends MedicationEvent {
-  final String? patientUniqueId;
+  final String? patientUniqueId; // Untuk dokter (jika menambah via unique ID)
   final int? patientGlobalId;
   final AddMedicationRequestModel request;
   final File? photoFile;
@@ -57,10 +64,14 @@ class AddMedicationRequested extends MedicationEvent {
 class UpdateMedicationRequested extends MedicationEvent {
   final int medicationId;
   final UpdateMedicationRequestModel request;
+  final File? photoFile;
+  final String? existingPhotoUrl;
 
   const UpdateMedicationRequested({
     required this.medicationId,
     required this.request,
+    this.photoFile,
+    this.existingPhotoUrl,
   });
 }
 

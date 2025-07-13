@@ -1,3 +1,4 @@
+// lib/data/repository/doctor_repository.dart
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:dartz/dartz.dart';
@@ -5,7 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:manajemen_obat/service/service_http_client.dart';
 import 'package:manajemen_obat/data/models/response/doctor_response_model.dart';
 import 'package:manajemen_obat/data/models/response/patient_response_model.dart';
-import 'package:manajemen_obat/data/models/response/login_response_model.dart';
+import 'package:manajemen_obat/data/models/response/login_response_model.dart'; // Import User model
 
 class DoctorRepository {
   final ServiceHttpClient _httpClient;
@@ -13,6 +14,8 @@ class DoctorRepository {
 
   DoctorRepository(this._httpClient);
 
+  // Helper function to get the current user data from local storage
+  // This is crucial for retrieving the doctor's global ID and other profile data.
   Future<User?> _getCurrentUserFromLocalStorage() async {
     try {
       final userDataString = await _secureStorage.read(key: 'userData');
@@ -26,6 +29,8 @@ class DoctorRepository {
     return null;
   }
 
+  /// @desc Get the profile data for the logged-in doctor
+  /// @route GET /api/doctor/profile (assuming this endpoint exists and uses token)
   Future<Either<String, DoctorData>> getDoctorProfile() async {
     try {
       final currentUser = await _getCurrentUserFromLocalStorage();
@@ -36,6 +41,7 @@ class DoctorRepository {
       }
 
       developer.log("DoctorRepository: Mengambil data profil dokter...");
+      // Assuming your backend has an endpoint like /api/doctor/profile that returns the doctor's data based on the token.
       final response = await _httpClient.get('doctor/profile');
 
       developer.log(
@@ -73,6 +79,8 @@ class DoctorRepository {
     }
   }
 
+  /// @desc Get a list of patients connected to the logged-in doctor
+  /// @route GET /api/doctor/my-connected-patients (assuming this endpoint exists and uses token)
   Future<Either<String, List<Patient>>> getConnectedPatients() async {
     try {
       final currentUser = await _getCurrentUserFromLocalStorage();
@@ -85,6 +93,7 @@ class DoctorRepository {
       developer.log(
         "DoctorRepository: Mengambil daftar pasien terhubung untuk dokter...",
       );
+      // Assuming endpoint is 'doctor/my-connected-patients' and token handles doctor identification
       final response = await _httpClient.get('doctor/my-connected-patients');
 
       developer.log(
@@ -119,6 +128,12 @@ class DoctorRepository {
     }
   }
 
+  /// @desc Connect a patient to the logged-in doctor
+  /// @route POST /api/doctor/connect-patient
+  /// This method is already present in PatientRepository, but duplicated here for Doctor's specific context if needed.
+  /// It's better to keep it where it is, or move it to a shared repository if both roles connect.
+  /// For now, I'll assume PatientRepository's connectPatient handles the backend call correctly for doctor's use case.
+  /// However, for the sake of explicit Doctor features, I'll add a wrapper here that leverages patientUniqueId and the logged-in doctor's global ID.
   Future<Either<String, String>> connectPatient(String patientUniqueId) async {
     try {
       final currentUser = await _getCurrentUserFromLocalStorage();
@@ -132,6 +147,9 @@ class DoctorRepository {
         "DoctorRepository: Menghubungkan pasien '$patientUniqueId' dengan dokter '${currentUser.idDokter}'",
       );
 
+      // Assuming backend expects: { "patientUniqueId": "...", "doctorId": "..." }
+      // Or it might just expect patientUniqueId and takes doctorId from the token.
+      // Based on your patient_repository.dart, it sends both: {'patientUniqueId': patientUniqueId, 'doctorId': doctorId}
       final response = await _httpClient.postWithToken(
         'doctor/connect-patient',
         {'patientUniqueId': patientUniqueId, 'doctorId': currentUser.idDokter},
@@ -158,6 +176,8 @@ class DoctorRepository {
     }
   }
 
+  /// @desc Disconnect a patient from the logged-in doctor
+  /// @route DELETE /api/doctor/disconnect-patient/:patientUniqueId
   Future<Either<String, String>> disconnectPatient(
     String patientUniqueId,
   ) async {
@@ -201,4 +221,7 @@ class DoctorRepository {
       return Left("Terjadi kesalahan saat memutuskan koneksi pasien.");
     }
   }
+
+  // Note: CRUD Medication functions (addMedication, updateMedication, deleteMedication, getMedicationsByPatientId, getMedicationHistoryByPatientId)
+  // are already handled by MedicationRepository. DoctorBloc will directly call MedicationRepository for these.
 }

@@ -1,13 +1,18 @@
+// lib/presentation/Home/pasien_homescreen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Ini sudah benar
 import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 import 'package:manajemen_obat/presentation/Home/medication_page.dart';
 import 'package:manajemen_obat/presentation/profil/pasien_profil_screen.dart';
+import 'package:manajemen_obat/core/core.dart'; // Import AppColors and other core utilities
+import 'package:manajemen_obat/core/components/spaces.dart'; // Import spaces if used
+
+// Import model dan bloc Anda
 import 'package:manajemen_obat/data/models/response/doctor_response_model.dart';
 import 'package:manajemen_obat/data/models/response/login_response_model.dart';
-import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart';
+import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart'; // Pastikan path ini benar (p_asien bukan P_asien)
 
 class PasienHomeScreen extends StatefulWidget {
   const PasienHomeScreen({super.key});
@@ -24,6 +29,7 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Menunda pemanggilan _loadUserDataAndFetchConnectedDoctor() hingga setelah widget di-mount
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserDataAndFetchConnectedDoctor();
     });
@@ -60,12 +66,34 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (currentUserData == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: AppColors.lightSheet, // Apply custom background color
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              AppColors.deepPurple,
+            ), // Apply custom deep purple color
+          ),
+        ),
+      );
     }
 
     return Scaffold(
+      backgroundColor: AppColors.lightSheet, // Apply custom background color
       appBar: AppBar(
-        title: const Text('Dashboard Pasien'),
+        title: const Text(
+          'Dashboard Pasien',
+          style: TextStyle(
+            color: AppColors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ), // Bolder and larger title
+        ),
+        backgroundColor: AppColors.deepPurple, // Apply custom deep purple color
+        elevation: 0, // Remove shadow
+        iconTheme: const IconThemeData(
+          color: AppColors.white,
+        ), // Ensure icons are white
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -85,8 +113,9 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadUserDataAndFetchConnectedDoctor,
+        color: AppColors.deepPurple, // Refresh indicator color
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24.0), // Increased padding
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,13 +123,18 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
               Text(
                 'Halo, ${currentUserData!.username ?? 'Pasien'}!',
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 28, // Larger font size
                   fontWeight: FontWeight.bold,
+                  color: AppColors.black, // Black for primary text
                 ),
               ),
+              const SizedBox(height: 8), // Adjusted spacing
               const Text(
                 'Selamat datang di aplikasi Asisten Manajemen Obat.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.grey,
+                ), // Grey text
               ),
               const SizedBox(height: 30),
 
@@ -110,7 +144,13 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
                   String? displayMessage;
 
                   if (state is ConnectedDoctorLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.deepPurple,
+                        ), // Deep purple loading
+                      ),
+                    );
                   } else if (state is ConnectedDoctorLoaded) {
                     displayedDoctor = state.doctorData;
                   } else if (state is ConnectedDoctorError) {
@@ -126,7 +166,7 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 30), // Increased spacing
 
               _buildFeatureCard(
                 context,
@@ -145,6 +185,7 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
                   );
                 },
               ),
+              const SizedBox(height: 16), // Spacing between cards
               _buildFeatureCard(
                 context,
                 icon: Icons.history_edu_outlined,
@@ -163,6 +204,7 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
                   );
                 },
               ),
+              const SizedBox(height: 16), // Spacing between cards
               _buildFeatureCard(
                 context,
                 icon: Icons.person_outline,
@@ -193,49 +235,75 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
     if (doctor != null) {
       return Card(
         margin: const EdgeInsets.symmetric(vertical: 8.0),
-        elevation: 3.0,
+        elevation: 6.0, // Increased elevation
+        shadowColor: AppColors.deepPurple.withOpacity(
+          0.3,
+        ), // Soft purple shadow
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
+          borderRadius: BorderRadius.circular(20.0), // More rounded corners
+          side: const BorderSide(
+            color: AppColors.light,
+            width: 0.5,
+          ), // Subtle light border
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24.0), // Increased padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.health_and_safety_outlined,
-                    size: 30,
-                    color: Theme.of(context).primaryColor,
+                  Container(
+                    padding: const EdgeInsets.all(
+                      10.0,
+                    ), // Padding for icon background
+                    decoration: BoxDecoration(
+                      color: AppColors.deepPurple.withOpacity(
+                        0.15,
+                      ), // Deep purple with opacity
+                      shape: BoxShape.circle, // Circular background
+                    ),
+                    child: const Icon(
+                      Icons.health_and_safety_outlined,
+                      size: 32, // Larger icon
+                      color: AppColors.deepPurple, // Deep purple icon
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  Text(
+                  const SizedBox(width: 16), // Increased spacing
+                  const Text(
                     'Terhubung dengan Dokter:',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18, // Larger font
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
+                      color: AppColors.deepPurple, // Deep purple text
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16), // Increased spacing
               Text(
                 doctor.name,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 22, // Larger font
                   fontWeight: FontWeight.w600,
+                  color: AppColors.black, // Black text
                 ),
               ),
+              const SizedBox(height: 8), // Adjusted spacing
               Text(
                 'Spesialisasi: ${doctor.specialization}',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.grey,
+                ), // Grey text
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 4), // Adjusted spacing
               Text(
                 'Telp: ${doctor.phoneNumber}',
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.grey,
+                ), // Grey text
               ),
             ],
           ),
@@ -244,38 +312,59 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
     } else {
       return Card(
         margin: const EdgeInsets.symmetric(vertical: 8.0),
-        elevation: 3.0,
+        elevation: 6.0, // Increased elevation
+        shadowColor: AppColors.redCustom.withOpacity(
+          0.3,
+        ), // Soft red shadow for warning
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
+          borderRadius: BorderRadius.circular(20.0), // More rounded corners
+          side: const BorderSide(
+            color: AppColors.light,
+            width: 0.5,
+          ), // Subtle light border
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24.0), // Increased padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.person_off_outlined,
-                    size: 30,
-                    color: Colors.orange[700],
+                  Container(
+                    padding: const EdgeInsets.all(
+                      10.0,
+                    ), // Padding for icon background
+                    decoration: BoxDecoration(
+                      color: AppColors.redCustom.withOpacity(
+                        0.15,
+                      ), // Red with opacity for warning
+                      shape: BoxShape.circle, // Circular background
+                    ),
+                    child: const Icon(
+                      Icons.person_off_outlined,
+                      size: 32, // Larger icon
+                      color: AppColors.redCustom, // Red warning icon
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  Text(
+                  const SizedBox(width: 16), // Increased spacing
+                  const Text(
                     'Status Koneksi Dokter:',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18, // Larger font
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange[700],
+                      color: AppColors.redCustom, // Red warning text
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16), // Increased spacing
               Text(
                 message ??
                     'Anda belum terhubung dengan dokter manapun. Dokter Anda dapat menghubungkan Anda menggunakan ID unik Anda (ID Pasien yang tersedia di halaman Profil).',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.grey,
+                ), // Grey text
               ),
             ],
           ),
@@ -293,17 +382,39 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
-      elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+      elevation: 6.0, // Increased elevation
+      shadowColor: AppColors.deepPurple.withOpacity(0.3), // Soft purple shadow
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.0), // More rounded corners
+        side: const BorderSide(
+          color: AppColors.light,
+          width: 0.5,
+        ), // Subtle light border
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10.0),
+        borderRadius: BorderRadius.circular(20.0), // Match card border radius
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24.0), // Increased padding
           child: Row(
             children: [
-              Icon(icon, size: 40, color: Theme.of(context).primaryColor),
-              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.all(
+                  10.0,
+                ), // Padding for icon background
+                decoration: BoxDecoration(
+                  color: AppColors.deepPurple.withOpacity(
+                    0.15,
+                  ), // Deep purple with opacity
+                  shape: BoxShape.circle, // Circular background
+                ),
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: AppColors.deepPurple,
+                ), // Larger, deep purple icon
+              ),
+              const SizedBox(width: 16), // Increased spacing
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,18 +422,27 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 20, // Larger font
                         fontWeight: FontWeight.bold,
+                        color: AppColors.black, // Black title
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6), // Adjusted spacing
                     Text(
                       subtitle,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: AppColors.grey,
+                      ), // Grey subtitle
                     ),
                   ],
                 ),
               ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.grey,
+                size: 20,
+              ), // Grey arrow icon
             ],
           ),
         ),

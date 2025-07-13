@@ -1,3 +1,4 @@
+// lib/bloc/doctor/doctor_bloc.dart
 import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:manajemen_obat/data/models/repository/doctor_repository.dart';
@@ -14,7 +15,8 @@ part 'doctor_state.dart';
 
 class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
   final DoctorRepository doctorRepository;
-  final MedicationRepository medicationRepository;
+  final MedicationRepository
+  medicationRepository; // Dokter juga berinteraksi dengan obat
 
   DoctorBloc({
     required this.doctorRepository,
@@ -55,6 +57,7 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
     LoadConnectedPatientsRequested event,
     Emitter<DoctorState> emit,
   ) async {
+    // Only show loading if not already loading profile
     if (state is! DoctorLoading ||
         (state as DoctorLoading).message != "Memuat profil dokter...") {
       emit(const DoctorLoading(message: "Memuat daftar pasien terhubung..."));
@@ -87,6 +90,7 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
       (successMessage) {
         log("DoctorBloc: Pasien berhasil dihubungkan: $successMessage");
         emit(DoctorPatientConnectionSuccess(message: successMessage));
+        // Refresh daftar pasien setelah berhasil koneksi
         add(const LoadConnectedPatientsRequested());
       },
     );
@@ -108,6 +112,7 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
       (successMessage) {
         log("DoctorBloc: Koneksi pasien berhasil diputuskan: $successMessage");
         emit(DoctorPatientConnectionSuccess(message: successMessage));
+        // Refresh daftar pasien setelah berhasil diskoneksi
         add(const LoadConnectedPatientsRequested());
       },
     );
@@ -134,6 +139,8 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
             message: responseModel.message ?? 'Obat berhasil ditambahkan.',
           ),
         );
+        // Opsional: Muat ulang daftar obat pasien setelah berhasil
+        // add(ViewPatientMedicationsRequested(patientUniqueId: event.patientUniqueId, patientGlobalId: /* get global ID */));
       },
     );
   }
@@ -159,6 +166,7 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
             message: responseModel.message ?? 'Obat berhasil diperbarui.',
           ),
         );
+        // Opsional: Muat ulang daftar obat pasien setelah berhasil
       },
     );
   }
@@ -179,6 +187,7 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
       (successMessage) {
         log("DoctorBloc: Obat berhasil dihapus: $successMessage");
         emit(DoctorMedicationActionSuccess(message: successMessage));
+        // Opsional: Muat ulang daftar obat pasien setelah berhasil
       },
     );
   }
@@ -226,6 +235,7 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
         log("DoctorBloc: Riwayat konsumsi obat pasien berhasil dimuat.");
         emit(
           DoctorPatientMedicationHistoryLoaded(
+            // responseModel.data sudah pasti List<MedicationHistoryData> dari MedicationRepository
             medicationHistory: responseModel.data,
           ),
         );

@@ -10,6 +10,7 @@ import 'package:manajemen_obat/presentation/auth/bloc/register/register_bloc.dar
 import 'package:manajemen_obat/presentation/doctor/bloc/doctor_bloc.dart';
 import 'package:manajemen_obat/presentation/family/bloc/family_bloc.dart';
 import 'package:manajemen_obat/presentation/medication/bloc/medication_bloc.dart';
+import 'package:manajemen_obat/presentation/camera/bloc/camera_bloc.dart';
 import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart';
 import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 import 'package:manajemen_obat/service/service_http_client.dart';
@@ -37,6 +38,7 @@ void main() {
         BlocProvider(
           create: (_) => PatientBloc(patientRepository: patientRepository),
         ),
+
         BlocProvider(
           create:
               (_) => MedicationBloc(medicationRepository: medicationRepository),
@@ -52,6 +54,7 @@ void main() {
                 medicationRepository: medicationRepository,
               ),
         ),
+        BlocProvider(create: (_) => CameraBloc()),
       ],
 
       child: const MyAppContent(),

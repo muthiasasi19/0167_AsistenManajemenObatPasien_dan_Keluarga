@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
-import 'package:manajemen_obat/data/models/response/medication_response_model.dart';
+import 'dart:developer' as developer; // DARI SINI YAH: Import developer
+import 'package:manajemen_obat/data/models/response/medication_response_model.dart'; // DARI SINI YAH: Import MedicationSchedule
 
 class MedicationHistoryResponseModel {
   final String? message;
@@ -32,15 +32,17 @@ class MedicationHistoryResponseModel {
 
 class MedicationHistoryData {
   final int? id;
-  final int? medicationId;
-  final int? patientId;
-  final String? status;
-  final String? notes;
-  final String? consumptionTime;
+  final int? medicationId; // id_obat
+  final int? patientId; // id_pasien
+  final String? status; // 'taken' atau 'missed'
+  final String? notes; // catatan
+  final String? consumptionTime; // waktu_konsumsi (DATETIME string)
   final String? medicationName; // dari JOIN obat
   final String? dosage; // dari JOIN obat
-  final MedicationSchedule? schedule;
-  final String? scheduledTime;
+  final MedicationSchedule?
+  schedule; // DARI SINI YAH: Ubah tipe data schedule menjadi objek MedicationSchedule
+  final String?
+  scheduledTime; // DARI SINI YAH: Tambahkan scheduledTime yang baru dari DB
 
   MedicationHistoryData({
     this.id,
@@ -52,7 +54,7 @@ class MedicationHistoryData {
     this.medicationName,
     this.dosage,
     this.schedule,
-    this.scheduledTime,
+    this.scheduledTime, // SAMPAI SINI, OKE
   });
 
   factory MedicationHistoryData.fromJson(String str) =>
@@ -61,6 +63,7 @@ class MedicationHistoryData {
   String toJson() => json.encode(toMap());
 
   factory MedicationHistoryData.fromMap(Map<String, dynamic> json) {
+    // DARI SINI YAH
     MedicationSchedule? parsedSchedule;
     final dynamic rawSchedule = json["schedule"];
 
@@ -93,20 +96,31 @@ class MedicationHistoryData {
 
     return MedicationHistoryData(
       id: json["id"] as int?,
-      medicationId: json["medicationId"] as int? ?? json["id_obat"] as int?,
-      patientId: json["patientId"] as int? ?? json["id_pasien"] as int?,
+      medicationId:
+          json["medicationId"] as int? ??
+          json["id_obat"] as int?, // Sesuaikan dengan kunci backend `id_obat`
+      patientId:
+          json["patientId"] as int? ??
+          json["id_pasien"]
+              as int?, // Sesuaikan dengan kunci backend `id_pasien`
       status: json["status"] as String?,
-      notes: json["notes"] as String? ?? json["catatan"] as String?,
+      notes:
+          json["notes"] as String? ??
+          json["catatan"]
+              as String?, // Sesuaikan dengan kunci backend `catatan`
       consumptionTime:
           json["consumptionTime"] as String? ??
-          json["waktu_konsumsi"] as String?,
+          json["waktu_konsumsi"]
+              as String?, // Sesuaikan dengan kunci backend `waktu_konsumsi`
       medicationName:
           json["medicationName"] as String? ?? json["nama_obat"] as String?,
       dosage: json["dosage"] as String? ?? json["dosis"] as String?,
       schedule: parsedSchedule,
-      scheduledTime: json["scheduledTime"] as String?,
+      scheduledTime: json["scheduled_time"] as String?, // SAMPAI SINI, OKE
     );
   }
+
+  get fullPhotoUrl => null;
 
   Map<String, dynamic> toMap() => {
     "id": id,

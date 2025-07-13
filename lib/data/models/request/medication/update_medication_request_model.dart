@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:manajemen_obat/data/models/response/medication_response_model.dart';
 
 class UpdateMedicationRequestModel {
@@ -8,6 +8,7 @@ class UpdateMedicationRequestModel {
   final MedicationSchedule schedule;
   final String? description;
   final String? photoUrl;
+  final File? photoFile;
 
   UpdateMedicationRequestModel({
     required this.medicationName,
@@ -15,7 +16,26 @@ class UpdateMedicationRequestModel {
     required this.schedule,
     this.description,
     this.photoUrl,
+    this.photoFile,
   });
+
+  UpdateMedicationRequestModel copyWith({
+    String? medicationName,
+    String? dosage,
+    MedicationSchedule? schedule,
+    String? description,
+    String? photoUrl,
+    File? photoFile,
+  }) {
+    return UpdateMedicationRequestModel(
+      medicationName: medicationName ?? this.medicationName,
+      dosage: dosage ?? this.dosage,
+      schedule: schedule ?? this.schedule,
+      description: description ?? this.description,
+      photoUrl: photoUrl ?? this.photoUrl,
+      photoFile: photoFile ?? this.photoFile,
+    );
+  }
 
   String toJson() => json.encode(toMap());
 

@@ -14,7 +14,7 @@ class AuthRepository {
 
   AuthRepository(this._httpClient);
 
-  // Register user
+  /// Register user
   Future<Either<String, String>> register(RegisterRequestModel request) async {
     try {
       final response = await _httpClient.post('auth/register', request.toMap());
@@ -36,7 +36,7 @@ class AuthRepository {
     }
   }
 
-  // Login user
+  /// Login user
   Future<Either<String, LoginResponseModel>> login(
     LoginRequestModel request,
   ) async {
@@ -71,6 +71,7 @@ class AuthRepository {
         );
 
         if (loginResponse.user != null) {
+          // Pastikan User model memiliki metode toMap() atau toJson() yang benar
           await _secureStorage.write(
             key: 'userData',
             value: jsonEncode(loginResponse.user!.toMap()),

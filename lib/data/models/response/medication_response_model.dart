@@ -1,3 +1,4 @@
+// File: lib/data/models/response/medication_response_model.dart
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:manajemen_obat/service/service_http_client.dart';
@@ -81,7 +82,7 @@ class Medication {
   final int? doctorId;
   final String medicationName;
   final String dosage;
-  final MedicationSchedule schedule; // <--- Tetap MedicationSchedule
+  final MedicationSchedule schedule;
   final String? description;
   final String? photoUrl;
   final String? createdAt;
@@ -109,6 +110,44 @@ class Medication {
     this.consumptionNotes,
     this.scheduledTime,
   });
+
+  // PERUBAHAN KAMERA: Tambahkan metode copyWith untuk memudahkan update objek Medication
+  Medication copyWith({
+    int? id,
+    int? patientId,
+    int? doctorId,
+    String? medicationName,
+    String? dosage,
+    MedicationSchedule? schedule,
+    String? description,
+    String? photoUrl,
+    String? createdAt,
+    String? updatedAt,
+    String? status,
+    bool? isTaken,
+    String? consumptionTime,
+    String? consumptionNotes,
+    String? scheduledTime,
+  }) {
+    return Medication(
+      id: id ?? this.id,
+      patientId: patientId ?? this.patientId,
+      doctorId: doctorId ?? this.doctorId,
+      medicationName: medicationName ?? this.medicationName,
+      dosage: dosage ?? this.dosage,
+      schedule: schedule ?? this.schedule,
+      description: description ?? this.description,
+      photoUrl: photoUrl ?? this.photoUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      status: status ?? this.status,
+      isTaken: isTaken ?? this.isTaken,
+      consumptionTime: consumptionTime ?? this.consumptionTime,
+      consumptionNotes: consumptionNotes ?? this.consumptionNotes,
+      scheduledTime: scheduledTime ?? this.scheduledTime,
+    );
+  }
+  // SAMPAI SINI
 
   factory Medication.fromJson(String str) =>
       Medication.fromMap(json.decode(str));
@@ -287,8 +326,6 @@ class TodaysMedicationSession {
       return null;
     }
     return '${ServiceHttpClient().baseUrl}${photoUrl!.replaceFirst('/api/', '')}';
-    // Atau yang lebih aman (seperti yang sebelumnya saya berikan):
-    // return '${ServiceHttpClient().baseUrl}${photoUrl!.replaceFirst('/api/', '')}';
   }
 
   TodaysMedicationSession({

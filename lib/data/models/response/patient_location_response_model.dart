@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class PatientLocationResponseModel {
   final String? message;
-  final PatientLocationData? data;
+  final PatientLocationData? data; // Bisa null jika lokasi tidak tersedia
 
   PatientLocationResponseModel({this.message, this.data});
 
@@ -26,7 +26,7 @@ class PatientLocationResponseModel {
 class PatientLocationData {
   final double? latitude;
   final double? longitude;
-  final String? timestamp;
+  final String? timestamp; // DATETIME string dari backend
 
   PatientLocationData({this.latitude, this.longitude, this.timestamp});
 
@@ -37,8 +37,8 @@ class PatientLocationData {
 
   factory PatientLocationData.fromMap(Map<String, dynamic> json) =>
       PatientLocationData(
-        latitude: (json["latitude"] as num?)?.toDouble(),
-        longitude: (json["longitude"] as num?)?.toDouble(),
+        latitude: (json["latitude"] as num?)?.toDouble(), // Pastikan double
+        longitude: (json["longitude"] as num?)?.toDouble(), // Pastikan double
         timestamp: json["timestamp"] as String?,
       );
 

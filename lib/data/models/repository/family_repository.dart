@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:manajemen_obat/data/models/response/family_response_model.dart';
+import 'package:manajemen_obat/service/Storage_Helper.dart';
 import 'package:manajemen_obat/service/service_http_client.dart';
 import 'package:manajemen_obat/data/models/response/connect_patient_family_response_model.dart';
 import 'package:manajemen_obat/data/models/response/medication_response_model.dart';
@@ -17,6 +19,8 @@ class FamilyRepository {
   FamilyRepository(this._httpClient);
 
   // Helper untuk mendapatkan ID internal keluarga dari local storage
+  // INILOH: Fungsi ini tetap ada sebagai fallback atau untuk keperluan lain,
+  // tapi kita akan mencoba menghindari ketergantungan langsung padanya di BLoC untuk timing.
   Future<int?> _getFamilyGlobalIdFromLocalStorage() async {
     final userDataString = await _secureStorage.read(key: 'userData');
     if (userDataString != null) {
@@ -29,12 +33,14 @@ class FamilyRepository {
   /// @desc Keluarga menghubungkan diri dengan pasien menggunakan kode unik pasien (id_pasien VARCHAR)
   /// @route POST /api/family/connect-to-patient
   Future<Either<String, String>> connectPatientToFamily(
-    FamilyConnectRequestModel request,
+    FamilyConnectRequestModel request, // Ini model REQUEST yang benar
   ) async {
     try {
       log(
         "FamilyRepository: Mengirim request koneksi keluarga ke pasien: ${request.patientUniqueId}",
       );
+      // INILOH: request.toMap() sekarang diharapkan berisi familyId dan familyGlobalId
+      // karena sudah ditambahkan ke FamilyConnectRequestModel di Bloc.
       final response = await _httpClient.postWithToken(
         'family/connect-to-patient',
         request.toMap(),
@@ -66,22 +72,31 @@ class FamilyRepository {
   }
 
   /// @desc Mendapatkan daftar pasien yang terhubung dengan keluarga
-  /// @route GET /api/family/connected-patients (Asumsi endpoint ini ada)
+  /// @route GET /api/family/my-connected-patients
   Future<Either<String, List<FamilyConnectedPatientData>>>
-  getConnectedPatientsForFamily() async {
+  // INILOH: Sekarang metode ini menerima familyGlobalId secara eksplisit
+  getConnectedPatientsForFamily({int? familyGlobalId}) async {
+    // INILOH: Menghapus String? familyId karena biasanya hanya satu ID yang dominan untuk API
     try {
-      final familyGlobalId = await _getFamilyGlobalIdFromLocalStorage();
-      if (familyGlobalId == null) {
+      // INILOH: Gunakan familyGlobalId dari parameter jika tersedia.
+      // Ini adalah prioritas utama untuk mencegah masalah timing.
+      final resolvedFamilyGlobalId =
+          familyGlobalId ?? await _getFamilyGlobalIdFromLocalStorage();
+
+      if (resolvedFamilyGlobalId == null) {
+        log(
+          "FamilyRepository: Gagal getConnectedPatientsForFamily, ID Keluarga tidak ditemukan (baik dari parameter maupun local storage).", // INILOH: Log lebih spesifik
+        );
         return const Left("ID Keluarga tidak ditemukan. Mohon login ulang.");
       }
       log(
-        "FamilyRepository: Mengambil daftar pasien terhubung untuk keluarga ID: $familyGlobalId",
+        "FamilyRepository: Mengambil daftar pasien terhubung untuk keluarga ID: $resolvedFamilyGlobalId",
       );
 
-      // Asumsi endpoint untuk mendapatkan daftar pasien terhubung adalah 'family/connected-patients'
-      final response = await _httpClient.get(
-        'family/my-connected-patients', // <-- Sesuaikan dengan endpoint API Anda
-      );
+      // INILOH: Diasumsikan endpoint 'family/my-connected-patients' mengandalkan token autentikasi.
+      // Jika backend Anda memerlukan familyGlobalId di path (misal: 'family/$resolvedFamilyGlobalId/my-connected-patients'),
+      // Anda HARUS mengubah baris di bawah ini.
+      final response = await _httpClient.get('family/my-connected-patients');
 
       log(
         "FamilyRepository - getConnectedPatientsForFamily: Status Code: ${response.statusCode}",
@@ -91,22 +106,20 @@ class FamilyRepository {
       );
 
       if (response.statusCode == 200) {
-        final responseBody = jsonDecode(response.body);
-        // Asumsi responsnya adalah List of Maps di bawah kunci 'data'
-        final List<dynamic> patientListJson = responseBody['data'] ?? [];
-        final List<FamilyConnectedPatientData> patients =
-            patientListJson
-                .map(
-                  (json) => FamilyConnectedPatientData.fromMap(
-                    json as Map<String, dynamic>,
-                  ),
-                )
-                .toList();
-        return Right(patients);
+        final responseModel = FamilyConnectedPatientResponseModel.fromJson(
+          response.body,
+        );
+        log(
+          "FamilyRepository - getConnectedPatientsForFamily: Berhasil, ${responseModel.data.length} pasien terhubung dimuat.",
+        );
+        return Right(responseModel.data);
       } else {
         final errorBody = jsonDecode(response.body);
         final message =
             errorBody['message'] ?? 'Gagal memuat daftar pasien terhubung.';
+        log(
+          "FamilyRepository - getConnectedPatientsForFamily: Gagal (${response.statusCode}): $message",
+        );
         return Left(message);
       }
     } catch (e, stackTrace) {
@@ -160,6 +173,8 @@ class FamilyRepository {
     }
   }
 
+  /// @desc Mendapatkan riwayat konsumsi obat untuk pasien tertentu yang terhubung (oleh keluarga)
+  /// @route GET /api/family/patients/:patientGlobalId/medication-history
   Future<Either<String, List<MedicationHistoryData>>>
   getPatientMedicationHistoryForFamily(int patientGlobalId) async {
     try {
@@ -253,6 +268,19 @@ class FamilyRepository {
         "FamilyRepository - getPatientLastLocationForFamily Error: $e\n$stackTrace",
       );
       return Left("Terjadi kesalahan saat memuat lokasi pasien.");
+    }
+  }
+
+  //Fungsi family profil
+  Future<FamilyResponseModel> getFamilyProfile() async {
+    try {
+      final response = await _httpClient.get(
+        '/family/profile', // Endpoint untuk profil keluarga
+      );
+      return FamilyResponseModel.fromJson(response.body);
+    } catch (e) {
+      print('Error fetching family profile: $e'); // Untuk debugging
+      rethrow;
     }
   }
 }

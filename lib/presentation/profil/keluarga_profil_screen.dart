@@ -1,7 +1,9 @@
+// lib/presentation/profil/keluarga_profil_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:manajemen_obat/presentation/family/bloc/family_bloc.dart';
-import 'package:manajemen_obat/data/models/response/login_response_model.dart';
+import 'package:http/http.dart'
+    as http; // Tetap menggunakan http untuk logika yang ada
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Tambahkan ini jika userData diambil dari storage
 
 class KeluargaProfileScreen extends StatefulWidget {
   const KeluargaProfileScreen({super.key});
@@ -11,88 +13,220 @@ class KeluargaProfileScreen extends StatefulWidget {
 }
 
 class _KeluargaProfileScreenState extends State<KeluargaProfileScreen> {
-  User? _currentUser;
+  bool isLoading = true;
+  String? errorMessage;
+  Map<String, dynamic>? userData;
+  final FlutterSecureStorage _secureStorage =
+      const FlutterSecureStorage(); // Inisialisasi storage
 
   @override
   void initState() {
     super.initState();
-    final familyState = context.read<FamilyBloc>().state;
-    if (familyState is FamilyLoaded) {
-      _currentUser = familyState.familyUserData;
+    // Mengubah _loginAndFetchProfile() menjadi _loadUserProfile()
+    // agar konsisten dengan DokterProfileScreen dan mengambil dari storage
+    _loadUserProfile();
+  }
+
+  // Mengganti _loginAndFetchProfile() dengan _loadUserProfile()
+  // agar data diambil dari secure storage, bukan hardcode login
+  Future<void> _loadUserProfile() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final userDataString = await _secureStorage.read(key: 'userData');
+      if (userDataString != null) {
+        userData = jsonDecode(userDataString);
+      } else {
+        errorMessage = "Data profil tidak ditemukan. Silakan login ulang.";
+      }
+    } catch (e) {
+      errorMessage = 'Terjadi kesalahan saat memuat profil: $e';
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Profil Keluarga")),
+        body: Center(child: Text("Error: $errorMessage")),
+      );
+    }
+
+    // Pastikan userData tidak null sebelum mengakses propertinya
+    if (userData == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Profil Keluarga")),
+        body: const Center(child: Text("Data pengguna tidak ditemukan.")),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Profil Keluarga"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<FamilyBloc>().add(const LoadFamilyDataRequested());
-            },
-            tooltip: 'Refresh Profil',
-          ),
-        ],
+        title: const Text(
+          "Profil Keluarga",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.deepPurple, // Warna berbeda untuk Keluarga
+        centerTitle: true,
+        elevation: 0,
       ),
-      body: BlocConsumer<FamilyBloc, FamilyState>(
-        listener: (context, state) {
-          if (state is FamilyLoaded) {
-            setState(() {
-              _currentUser = state.familyUserData;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Data profil diperbarui!')),
-            );
-          } else if (state is FamilyLoading) {
-          } else if (state is FamilyError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error memuat profil: ${state.message}')),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (_currentUser == null) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Memuat data profil...'),
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Bagian Avatar Profil
+            CircleAvatar(
+              radius: 60,
+              backgroundColor: Colors.deepPurple.withOpacity(0.2),
+              child: Icon(
+                Icons.family_restroom, // Ikon untuk keluarga
+                size: 80,
+                color: Colors.deepPurple.shade700,
               ),
-            );
-          }
+            ),
+            const SizedBox(height: 20),
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
+            // Nama Keluarga
+            Text(
+              userData!['username'] ??
+                  'Nama Keluarga Tidak Diketahui', // Menggunakan username sebagai nama
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 5),
+
+            // Role
+            Text(
+              userData!['role'] ?? 'Role Tidak Tersedia',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade700,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+
+            // Detail Informasi dalam Card
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              child: Padding(
+                padding: const EdgeInsets.all(15.0),
+                child: Column(
+                  children: [
+                    _buildProfileInfoRow(
+                      icon: Icons.vpn_key, // Ikon untuk ID unik keluarga
+                      label: "ID Keluarga",
+                      value:
+                          userData!['id_keluarga'] ??
+                          'Tidak tersedia', // Asumsi ada 'id_keluarga'
+                      iconColor: Colors.deepPurple,
+                    ),
+                    _buildDivider(),
+                    _buildProfileInfoRow(
+                      icon: Icons.person,
+                      label: "Nama Lengkap",
+                      value:
+                          userData!['nama'] ??
+                          'Tidak tersedia', // Asumsi ada 'nama'
+                      iconColor: Colors.deepPurple,
+                    ),
+                    _buildDivider(),
+                    _buildProfileInfoRow(
+                      icon: Icons.phone,
+                      label: "Nomor Telepon",
+                      value:
+                          userData!['nomor_telepon'] ??
+                          'Tidak tersedia', // Asumsi ada 'nomor_telepon'
+                      iconColor: Colors.deepPurple,
+                    ),
+                    _buildDivider(),
+                    _buildProfileInfoRow(
+                      icon: Icons.location_on,
+                      label: "Alamat",
+                      value:
+                          userData!['alamat'] ??
+                          'Tidak tersedia', // Asumsi ada 'alamat'
+                      iconColor: Colors.deepPurple,
+                    ),
+                    // Tambahkan detail lain sesuai kebutuhan Anda dari userData
+                    // Pastikan kunci yang digunakan cocok dengan JSON dari backend
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method untuk membuat baris informasi profil
+  Widget _buildProfileInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color iconColor = Colors.blueAccent, // Tambahkan parameter warna ikon
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 24), // Gunakan iconColor
+          const SizedBox(width: 15),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Nama: ${_currentUser!.namaKeluarga ?? _currentUser!.username ?? 'N/A'}",
+                  label,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
                   ),
                 ),
-                Text("Role: ${_currentUser!.role ?? 'N/A'}"),
-                Text("ID Keluarga Unik: ${_currentUser!.idKeluarga ?? 'N/A'}"),
-                Text(
-                  "ID Global Keluarga: ${_currentUser!.familyGlobalId?.toString() ?? 'N/A'}",
-                ),
-                Text(
-                  "Nomor Telepon: ${_currentUser!.nomorTeleponKeluarga ?? 'N/A'}",
-                ),
-                Text("Alamat: ${_currentUser!.alamatKeluarga ?? 'N/A'}"),
               ],
             ),
-          );
-        },
+          ),
+        ],
       ),
+    );
+  }
+
+  // Helper method untuk divider
+  Widget _buildDivider() {
+    return Divider(
+      color: Colors.grey.shade300,
+      thickness: 1,
+      height: 20,
+      indent: 40, // Sesuaikan dengan indentasi ikon
     );
   }
 }

@@ -1,15 +1,19 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+// Model untuk satu objek pasien
 class Patient {
-  final String id;
+  final String
+  id; // ID global pasien dari backend (INT, tapi di Flutter String karena dari .toString())
   final String name;
-  final String patientId;
+  final String
+  patientId; // ID unik pasien dari backend (VARCHAR, misal: 'PSN...')
   final String? dateOfBirth;
   final String? gender;
   final String? phoneNumber;
   final String? address;
-  final String? connectedDoctorId;
+  final String?
+  connectedDoctorId; // ID Dokter yang terhubung dengan pasien ini (optional)
 
   Patient({
     required this.id,
@@ -29,20 +33,27 @@ class Patient {
   factory Patient.fromMap(Map<String, dynamic> json) {
     developer.log('[Patient.fromMap] Raw JSON: $json');
 
+    // Backend mengirim: patientGlobalId, patientUniqueId, patientName
+    // Frontend harus memetakan ke: id, patientId, name
+
     final String id =
         json["patientGlobalId"]?.toString() ??
         ''; // Mengambil dari "patientGlobalId"
     final String patientId =
         json["patientUniqueId"] as String? ??
         ''; // Mengambil dari "patientUniqueId"
-    final String name = json["patientName"] as String? ?? '';
+    final String name =
+        json["patientName"] as String? ?? ''; // Mengambil dari "patientName"
 
+    // Optional fields, pastikan juga sesuai dengan kunci backend jika ada
     final String? dateOfBirth = json["dateOfBirth"] as String?;
     final String? gender = json["gender"] as String?;
     final String? phoneNumber = json["phoneNumber"] as String?;
     final String? address = json["address"] as String?;
     final String? connectedDoctorId =
         json["doctorId"]?.toString(); // Mengambil dari "doctorId"
+
+    // SAMPAI BAGIAN INI: Memperbaiki pemetaan kunci JSON.
 
     developer.log(
       '[Patient.fromMap] Parsed Patient: Name="$name", PatientID="$patientId", GlobalID="$id"',
@@ -61,16 +72,23 @@ class Patient {
   }
 
   Map<String, dynamic> toMap() => {
+    // DARI BAGIAN INI: Sesuaikan kunci saat mengirim ke backend jika diperlukan.
     // Ini adalah kunci yang akan digunakan saat Patient objek diubah menjadi Map/JSON.
-    "patientGlobalId": id,
-    "patientUniqueId": patientId,
-    "patientName": name,
+    "patientGlobalId": id, // Nama kunci yang backend harapkan jika ini dikirim
+    "patientUniqueId": patientId, // Nama kunci yang backend harapkan
+    "patientName": name, // Nama kunci yang backend harapkan
     "dateOfBirth": dateOfBirth,
     "gender": gender,
     "phoneNumber": phoneNumber,
     "address": address,
-    "doctorId": connectedDoctorId,
+    "doctorId": connectedDoctorId, // Nama kunci yang backend harapkan
+    // SAMPAI BAGIAN INI: Sesuaikan kunci saat mengirim ke backend jika diperlukan.
   };
+
+  void fold(
+    void Function(dynamic errorMessage) param0,
+    void Function(dynamic responseModel) param1,
+  ) {}
 }
 
 // Model untuk respons yang berisi daftar pasien
@@ -121,3 +139,4 @@ class SinglePatientResponseModel {
 
   Map<String, dynamic> toMap() => {"message": message, "data": data?.toMap()};
 }
+// AKU PERBAIKI SAMPAI SINI
