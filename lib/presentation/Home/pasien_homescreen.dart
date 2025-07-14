@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:manajemen_obat/data/models/repository/patient_repository.dart';
 import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 import 'package:manajemen_obat/presentation/Home/medication_page.dart';
 import 'package:manajemen_obat/presentation/profil/pasien_profil_screen.dart';
@@ -12,6 +11,7 @@ import 'package:manajemen_obat/core/components/spaces.dart'; // Import spaces if
 import 'dart:developer' as developer;
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
+import 'package:manajemen_obat/presentation/in_app_reminder/bloc/in_app_reminder_bloc.dart';
 import 'package:manajemen_obat/data/models/response/doctor_response_model.dart';
 import 'package:manajemen_obat/data/models/response/login_response_model.dart';
 import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart'; // Pastikan path ini benar (p_asien bukan P_asien)
@@ -29,14 +29,16 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   Timer?
   _locationTimer; // FITUR MAPS: Deklarasi Timer untuk pembaruan lokasi berkala
+  Timer? _reminderTimer; // Timer untuk pengingat in-app
+  bool _isReminderDialogShowing = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserDataAndFetchConnectedDoctor();
-      // FITUR MAPS: Memulai pembaruan lokasi secara otomatis saat halaman ini aktif
       _startLocationUpdates();
+      _initializeInAppReminders();
     });
   }
 
@@ -44,6 +46,7 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
   void dispose() {
     // FITUR MAPS: Pastikan timer dibatalkan saat widget dihapus untuk mencegah memory leaks
     _locationTimer?.cancel();
+    _reminderTimer?.cancel(); // Batalkan timer pengingat notifikais
     super.dispose();
   }
 
@@ -192,6 +195,105 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
     );
   }
 
+  // TAMBAH NOTIFIKASI
+  void _initializeInAppReminders() {
+    // Muat jadwal pengingat saat ini dari backend
+    context.read<InAppReminderBloc>().add(const LoadMyNotificationSchedules());
+
+    // Mulai timer untuk memeriksa pengingat setiap 15-30 detik (sesuaikan interval)
+    _reminderTimer = Timer.periodic(
+      const Duration(seconds: 20), // Periksa setiap 20 detik
+      (timer) {
+        context.read<InAppReminderBloc>().add(const CheckForInAppReminders());
+      },
+    );
+  }
+
+  void _showInAppReminderDialog(
+    String medicationName,
+    String dosage,
+    String scheduledTime,
+    String reminderType,
+  ) {
+    if (_isReminderDialogShowing) {
+      developer.log("Reminder dialog is already showing. Skipping.");
+      return; // Hindari menampilkan dialog ganda
+    }
+
+    setState(() {
+      _isReminderDialogShowing = true;
+    });
+
+    String title;
+    Color iconColor;
+    IconData icon;
+
+    if (reminderType == 'early') {
+      title = 'Pengingat Awal!';
+      iconColor = AppColors.blueLight;
+      icon = Icons.alarm;
+    } else {
+      // 'on_time'
+      title = 'Waktunya Minum Obat!';
+      iconColor = AppColors.deepPurple;
+      icon = Icons.medication;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must interact to dismiss
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(icon, color: iconColor, size: 30),
+              const SpaceWidth(10),
+              Flexible(
+                // Use Flexible to prevent overflow
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Obat: $medicationName\nDosis: $dosage\nJadwal: $scheduledTime',
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                setState(() {
+                  _isReminderDialogShowing = false;
+                });
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: AppColors.deepPurple,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      setState(() {
+        _isReminderDialogShowing =
+            false; // Reset flag after dialog is dismissed
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (currentUserData == null) {
@@ -206,24 +308,55 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
     }
 
     // Wrap Scaffold dengan BlocListener untuk mendengarkan state dari PatientLocationBloc
-    return BlocListener<PatientLocationBloc, PatientLocationState>(
-      listener: (context, state) {
-        if (state is SendLocationSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Lokasi berhasil dikirim ke keluarga!'),
-              backgroundColor: AppColors.deepPurple,
-            ),
-          );
-        } else if (state is SendLocationError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal mengirim lokasi: ${state.message}'),
-              backgroundColor: AppColors.redCustom,
-            ),
-          );
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<PatientLocationBloc, PatientLocationState>(
+          listener: (context, state) {
+            if (state is SendLocationSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Lokasi berhasil dikirim ke keluarga!'),
+                  backgroundColor: AppColors.deepPurple,
+                ),
+              );
+            } else if (state is SendLocationError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Gagal mengirim lokasi: ${state.message}'),
+                  backgroundColor: AppColors.redCustom,
+                ),
+              );
+            }
+          },
+        ),
+
+        BlocListener<InAppReminderBloc, InAppReminderState>(
+          listener: (context, state) {
+            if (state is ShowInAppReminder) {
+              developer.log(
+                "PasienHomeScreen: Received ShowInAppReminder state for ${state.medicationName} at ${state.scheduledTime}",
+              );
+              _showInAppReminderDialog(
+                state.medicationName,
+                state.medicationDosage,
+                state.scheduledTime,
+                state.reminderType,
+              );
+            } else if (state is InAppReminderError) {
+              developer.log(
+                "PasienHomeScreen: InAppReminder Error: ${state.message}",
+              );
+              // Opsi: Tampilkan SnackBar atau pesan error kecil jika diinginkan
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Pengingat error: ${state.message}'),
+                  backgroundColor: AppColors.redCustom,
+                ),
+              );
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         backgroundColor: AppColors.lightSheet,
         appBar: AppBar(
@@ -256,7 +389,10 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
           ],
         ),
         body: RefreshIndicator(
-          onRefresh: _loadUserDataAndFetchConnectedDoctor,
+          onRefresh: () async {
+            await _loadUserDataAndFetchConnectedDoctor();
+            _initializeInAppReminders(); // Muat ulang pengingat juga saat refresh
+          },
           color: AppColors.deepPurple,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),

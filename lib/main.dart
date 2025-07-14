@@ -15,6 +15,9 @@ import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart';
 import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 import 'package:manajemen_obat/presentation/patient_location/bloc/patient_location_bloc.dart';
 import 'package:manajemen_obat/service/service_http_client.dart';
+import 'package:manajemen_obat/data/models/repository/notification_repository.dart';
+import 'package:manajemen_obat/presentation/notification/bloc/notification_bloc.dart';
+import 'package:manajemen_obat/presentation/in_app_reminder/bloc/in_app_reminder_bloc.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -25,6 +28,7 @@ void main() {
   final medicationRepository = MedicationRepository(service);
   final familyRepository = FamilyRepository(service);
   final doctorRepository = DoctorRepository(service);
+  final notificationRepository = NotificationRepository(service);
 
   runApp(
     MultiBlocProvider(
@@ -65,6 +69,20 @@ void main() {
               ),
         ),
         BlocProvider(create: (_) => CameraBloc()),
+        BlocProvider<NotificationBloc>(
+          create:
+              (context) => NotificationBloc(
+                notificationRepository:
+                    notificationRepository, // Gunakan instance lokal
+              ),
+        ),
+        BlocProvider<InAppReminderBloc>(
+          create:
+              (context) => InAppReminderBloc(
+                notificationRepository:
+                    notificationRepository, // Gunakan instance lokal
+              ),
+        ),
       ],
       child: const MyAppContent(),
     ),

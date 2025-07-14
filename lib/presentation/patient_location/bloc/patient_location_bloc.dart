@@ -4,8 +4,6 @@ import 'package:manajemen_obat/data/models/repository/family_repository.dart';
 import 'package:manajemen_obat/data/models/repository/patient_repository.dart';
 import 'package:manajemen_obat/data/models/response/patient_location_response_model.dart';
 import 'dart:developer' as developer;
-import 'package:flutter/foundation.dart';
-
 part 'patient_location_event.dart';
 part 'patient_location_state.dart';
 

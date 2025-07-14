@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
-
 import 'package:manajemen_obat/core/core.dart';
-import 'package:manajemen_obat/core/components/spaces.dart';
 import 'package:manajemen_obat/presentation/Home/patient_management_page.dart';
 import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 import 'package:manajemen_obat/presentation/profil/dokter_profil_screen.dart';
-import 'package:manajemen_obat/presentation/home/notifikasi_obat.dart';
 
 class DokterHomeScreen extends StatefulWidget {
   const DokterHomeScreen({super.key});
@@ -354,7 +351,15 @@ class _DokterHomeScreenState extends State<DokterHomeScreen> {
                             subtitle:
                                 'Atur jadwal dan pengingat konsumsi obat otomatis untuk pasien Anda.',
                             onTap: () {
-                              context.push(const NotifikasiObat());
+                              Navigator.push(
+                                // Menggunakan Navigator.push untuk navigasi
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) =>
+                                          const PatientManagementPage(),
+                                ),
+                              );
                             },
                           ),
                           const SizedBox(

@@ -8,7 +8,7 @@ import 'package:path/path.dart' as path;
 
 class ServiceHttpClient {
   final String baseUrl =
-      'http://192.168.147.39:3000/api/'; // Ganti sesuai IP dan port. Kalau di Chrome, 127.0.0.1 . Kalau Android Emulator, coba 'http://10.0.2.2:3000/api/'
+      'http://192.168.147.75:3000/api/'; // Ganti sesuai IP dan port. Kalau di Chrome, 127.0.0.1 . Kalau Android Emulator, coba 'http://10.0.2.2:3000/api/'
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
   Future<String?> getToken() async {

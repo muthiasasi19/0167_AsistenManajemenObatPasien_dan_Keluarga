@@ -11,14 +11,14 @@ import 'package:manajemen_obat/data/models/response/medication_history_response_
 import 'package:manajemen_obat/data/models/response/medication_response_model.dart';
 import 'package:manajemen_obat/data/models/response/patient_search_result_model.dart';
 import 'package:manajemen_obat/presentation/Home/image_viewer_page.dart';
+import 'package:manajemen_obat/presentation/Home/notifikasi_obat.dart';
 import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart';
 import 'package:manajemen_obat/presentation/medication/bloc/medication_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:manajemen_obat/service/service_http_client.dart';
-import 'package:collection/collection.dart';
 import 'dart:developer' as developer;
+import 'package:image_picker/image_picker.dart';
+import 'package:collection/collection.dart';
 
 import 'package:manajemen_obat/data/models/response/login_response_model.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -885,6 +885,33 @@ class _MedicationPageState extends State<MedicationPage> {
                     ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.notifications_active_outlined,
+                            color:
+                                AppColors
+                                    .blueLight, // Warna yang menonjol untuk notifikasi
+                          ),
+                          onPressed: () {
+                            // Navigasi ke halaman pengaturan notifikasi
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => NotifikasiObat(
+                                      // NotifikasiObat akan menjadi halaman pengaturan notifikasi
+                                      medicationGlobalId: medication.id,
+                                      patientGlobalId: medication.patientId,
+                                      medicationName: medication.medicationName,
+                                      patientName:
+                                          _currentSelectedPatientName ??
+                                          'Pasien Tidak Diketahui',
+                                    ),
+                              ),
+                            );
+                          },
+                          tooltip: 'Atur Pengingat In-App',
+                        ),
                         IconButton(
                           icon: const Icon(
                             Icons.edit,
