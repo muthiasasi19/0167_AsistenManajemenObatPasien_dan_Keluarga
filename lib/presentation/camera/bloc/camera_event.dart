@@ -1,5 +1,4 @@
-// File: lib/presentation/camera/bloc/camera_event.dart
-part of 'camera_bloc.dart'; // Pastikan ini sesuai dengan nama file bloc
+part of 'camera_bloc.dart';
 
 sealed class CameraEvent extends Equatable {
   const CameraEvent();

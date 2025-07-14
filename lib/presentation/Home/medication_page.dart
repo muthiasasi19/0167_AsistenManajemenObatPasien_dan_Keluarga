@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:manajemen_obat/core/components/spaces.dart';
-import 'package:manajemen_obat/core/core.dart'; // Ensure AppColors is accessible here
+import 'package:manajemen_obat/core/core.dart';
 import 'package:manajemen_obat/data/models/request/medication/add_medication_request_model.dart';
 import 'package:manajemen_obat/data/models/request/medication/update_medication_request_model.dart';
 import 'package:manajemen_obat/data/models/response/medication_history_response_model.dart'
@@ -15,7 +15,6 @@ import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart';
 import 'package:manajemen_obat/presentation/medication/bloc/medication_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-
 import 'package:image_picker/image_picker.dart';
 import 'package:manajemen_obat/service/service_http_client.dart';
 import 'package:collection/collection.dart';
@@ -59,8 +58,7 @@ class _MedicationPageState extends State<MedicationPage> {
   final FocusNode _patientSearchFocusNode = FocusNode();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  String _selectedScheduleTypeDialog =
-      'daily_fixed_times'; // Untuk memilih tipe jadwal (harian, mingguan, PRN)
+  String _selectedScheduleTypeDialog = 'daily_fixed_times';
   int _selectedDailyFrequencyDialog = 1; // Untuk 1x, 2x, 3x, 4x sehari
   List<TimeOfDay> _selectedTimesDialog = [TimeOfDay.now()];
 

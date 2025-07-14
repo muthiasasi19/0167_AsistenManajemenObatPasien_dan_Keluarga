@@ -1,4 +1,3 @@
-// lib/bloc/doctor/doctor_state.dart
 part of 'doctor_bloc.dart';
 
 sealed class DoctorState {
@@ -55,7 +54,6 @@ final class DoctorPatientMedicationsLoaded extends DoctorState {
 
 // State Ketika Riwayat Konsumsi Obat Pasien Berhasil Dimuat
 final class DoctorPatientMedicationHistoryLoaded extends DoctorState {
-  final List<MedicationHistoryData> // UBAH TIPE DATA INI!
-  medicationHistory;
+  final List<MedicationHistoryData> medicationHistory;
   const DoctorPatientMedicationHistoryLoaded({required this.medicationHistory});
 }

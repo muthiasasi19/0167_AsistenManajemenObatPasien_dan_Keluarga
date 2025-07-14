@@ -2,17 +2,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Ini sudah benar
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:manajemen_obat/data/models/repository/patient_repository.dart';
 import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 import 'package:manajemen_obat/presentation/Home/medication_page.dart';
 import 'package:manajemen_obat/presentation/profil/pasien_profil_screen.dart';
 import 'package:manajemen_obat/core/core.dart'; // Import AppColors and other core utilities
 import 'package:manajemen_obat/core/components/spaces.dart'; // Import spaces if used
-
-// Import model dan bloc Anda
+import 'dart:developer' as developer;
+import 'dart:async';
+import 'package:geolocator/geolocator.dart';
 import 'package:manajemen_obat/data/models/response/doctor_response_model.dart';
 import 'package:manajemen_obat/data/models/response/login_response_model.dart';
 import 'package:manajemen_obat/presentation/pasien/bloc/patient_bloc.dart'; // Pastikan path ini benar (p_asien bukan P_asien)
+import 'package:manajemen_obat/presentation/patient_location/bloc/patient_location_bloc.dart';
 
 class PasienHomeScreen extends StatefulWidget {
   const PasienHomeScreen({super.key});
@@ -23,16 +26,25 @@ class PasienHomeScreen extends StatefulWidget {
 
 class _PasienHomeScreenState extends State<PasienHomeScreen> {
   User? currentUserData;
-
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  Timer?
+  _locationTimer; // FITUR MAPS: Deklarasi Timer untuk pembaruan lokasi berkala
 
   @override
   void initState() {
     super.initState();
-    // Menunda pemanggilan _loadUserDataAndFetchConnectedDoctor() hingga setelah widget di-mount
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserDataAndFetchConnectedDoctor();
+      // FITUR MAPS: Memulai pembaruan lokasi secara otomatis saat halaman ini aktif
+      _startLocationUpdates();
     });
+  }
+
+  @override
+  void dispose() {
+    // FITUR MAPS: Pastikan timer dibatalkan saat widget dihapus untuk mencegah memory leaks
+    _locationTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadUserDataAndFetchConnectedDoctor() async {
@@ -63,170 +75,312 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
     }
   }
 
+  // FITUR MAPS: Fungsi untuk memeriksa dan meminta izin lokasi perangkat
+  // FUNGSI INI HARUS ADA DI SINI AGAR TIDAK ADA ERROR 'NOT DEFINED'
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Cek apakah layanan lokasi (GPS) aktif di perangkat
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Layanan lokasi dinonaktifkan. Harap aktifkan layanan lokasi.',
+          ),
+        ),
+      );
+      return false;
+    }
+
+    // Cek status izin lokasi aplikasi
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      // Jika izin ditolak, minta izin ke pengguna
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Jika izin tetap ditolak setelah permintaan
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Izin lokasi ditolak secara permanen.')),
+        );
+        return false;
+      }
+    }
+
+    // Jika izin ditolak selamanya oleh pengguna (don't ask again)
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Izin lokasi ditolak secara permanen. Kami tidak dapat meminta izin.',
+          ),
+        ),
+      );
+      return false;
+    }
+    // Jika izin diberikan
+    return true;
+  }
+
+  // FITUR MAPS: Fungsi untuk mendapatkan lokasi terkini dan mengirimkannya ke backend melalui Bloc
+  Future<void> _getCurrentAndSendLocation({bool showSnackbar = true}) async {
+    final hasPermission =
+        await _handleLocationPermission(); // Panggilan ke fungsi yang sudah ada
+    if (!hasPermission) {
+      developer.log(
+        'FITUR MAPS: Izin lokasi tidak diberikan atau layanan tidak aktif.',
+      );
+      return;
+    }
+
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      developer.log(
+        'FITUR MAPS: Lokasi Pasien: Lat ${position.latitude}, Long ${position.longitude}',
+      );
+
+      // Kirim event ke PatientLocationBloc
+      context.read<PatientLocationBloc>().add(
+        SendPatientLocationRequested(
+          latitude: position.latitude,
+          longitude: position.longitude,
+        ),
+      );
+
+      // Tampilkan SnackBar untuk menandakan proses pengiriman dimulai (jika diizinkan)
+      if (showSnackbar) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mengirim lokasi...'),
+            backgroundColor: AppColors.deepPurple, // Warna informatif
+          ),
+        );
+      }
+    } catch (e) {
+      // Tangani error jika terjadi masalah saat mendapatkan lokasi (sebelum dikirim)
+      developer.log('FITUR MAPS: Error saat mendapatkan lokasi: $e');
+      if (showSnackbar) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saat mendapatkan lokasi: $e'),
+            backgroundColor: AppColors.redCustom,
+          ),
+        );
+      }
+    }
+  }
+
+  // FITUR MAPS: Metode untuk memulai timer pembaruan lokasi berkala
+  void _startLocationUpdates() {
+    // Kirim lokasi satu kali segera setelah fungsi ini dipanggil
+    // Ini akan menampilkan "Mengirim lokasi..." SnackBar
+    _getCurrentAndSendLocation(showSnackbar: true);
+
+    // Atur timer untuk mengirim lokasi secara berkala
+    _locationTimer = Timer.periodic(
+      const Duration(
+        seconds: 30, // Interval pengiriman lokasi (misal: setiap 30 detik)
+      ),
+      (timer) {
+        // Panggil fungsi pengiriman lokasi, tapi tanpa menampilkan SnackBar setiap kali jika pengiriman otomatis.
+        _getCurrentAndSendLocation(showSnackbar: false);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (currentUserData == null) {
       return Scaffold(
-        backgroundColor: AppColors.lightSheet, // Apply custom background color
+        backgroundColor: AppColors.lightSheet,
         body: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              AppColors.deepPurple,
-            ), // Apply custom deep purple color
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.deepPurple),
           ),
         ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.lightSheet, // Apply custom background color
-      appBar: AppBar(
-        title: const Text(
-          'Dashboard Pasien',
-          style: TextStyle(
-            color: AppColors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ), // Bolder and larger title
-        ),
-        backgroundColor: AppColors.deepPurple, // Apply custom deep purple color
-        elevation: 0, // Remove shadow
-        iconTheme: const IconThemeData(
-          color: AppColors.white,
-        ), // Ensure icons are white
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await _secureStorage.delete(key: 'authToken');
-              await _secureStorage.delete(key: 'userRole');
-              await _secureStorage.delete(key: 'userData');
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
-              );
-            },
-            tooltip: 'Logout',
+    // Wrap Scaffold dengan BlocListener untuk mendengarkan state dari PatientLocationBloc
+    return BlocListener<PatientLocationBloc, PatientLocationState>(
+      listener: (context, state) {
+        if (state is SendLocationSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Lokasi berhasil dikirim ke keluarga!'),
+              backgroundColor: AppColors.deepPurple,
+            ),
+          );
+        } else if (state is SendLocationError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mengirim lokasi: ${state.message}'),
+              backgroundColor: AppColors.redCustom,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.lightSheet,
+        appBar: AppBar(
+          title: const Text(
+            'Dashboard Pasien',
+            style: TextStyle(
+              color: AppColors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadUserDataAndFetchConnectedDoctor,
-        color: AppColors.deepPurple, // Refresh indicator color
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0), // Increased padding
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Halo, ${currentUserData!.username ?? 'Pasien'}!',
-                style: const TextStyle(
-                  fontSize: 28, // Larger font size
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black, // Black for primary text
+          backgroundColor: AppColors.deepPurple,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: AppColors.white),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                await _secureStorage.delete(key: 'authToken');
+                await _secureStorage.delete(key: 'userRole');
+                await _secureStorage.delete(key: 'userData');
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+              tooltip: 'Logout',
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: _loadUserDataAndFetchConnectedDoctor,
+          color: AppColors.deepPurple,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Halo, ${currentUserData!.username ?? 'Pasien'}!',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.black,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8), // Adjusted spacing
-              const Text(
-                'Selamat datang di aplikasi Asisten Manajemen Obat.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.grey,
-                ), // Grey text
-              ),
-              const SizedBox(height: 30),
+                const SizedBox(height: 8),
+                const Text(
+                  'Selamat datang di aplikasi Asisten Manajemen Obat.',
+                  style: TextStyle(fontSize: 16, color: AppColors.grey),
+                ),
+                const SizedBox(height: 30),
+                BlocBuilder<PatientBloc, PatientState>(
+                  builder: (context, state) {
+                    DoctorData? displayedDoctor;
+                    String? displayMessage;
 
-              BlocBuilder<PatientBloc, PatientState>(
-                builder: (context, state) {
-                  DoctorData? displayedDoctor;
-                  String? displayMessage;
+                    if (state is ConnectedDoctorLoading) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.deepPurple,
+                          ),
+                        ),
+                      );
+                    } else if (state is ConnectedDoctorLoaded) {
+                      displayedDoctor = state.doctorData;
+                    } else if (state is ConnectedDoctorError) {
+                      displayMessage = state.message;
+                    } else {
+                      displayMessage = 'Memuat status koneksi dokter...';
+                    }
 
-                  if (state is ConnectedDoctorLoading) {
-                    return Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.deepPurple,
-                        ), // Deep purple loading
+                    return _buildConnectedDoctorSection(
+                      context,
+                      displayedDoctor,
+                      displayMessage,
+                    );
+                  },
+                ),
+                const SizedBox(height: 30),
+                // FITUR MAPS: Kartu UI baru untuk mengirim lokasi secara manual
+                _buildFeatureCard(
+                  context,
+                  icon: Icons.location_on_outlined,
+                  title: 'Kirim Lokasi Saya',
+                  subtitle:
+                      'Kirim lokasi terkini Anda kepada keluarga yang terhubung.',
+                  onTap: () {
+                    // Panggil fungsi pengiriman lokasi dengan SnackBar
+                    _getCurrentAndSendLocation(showSnackbar: true);
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildFeatureCard(
+                  context,
+                  icon: Icons.access_time_outlined,
+                  title: 'Jadwal Konsumsi Obat',
+                  subtitle:
+                      'Lihat jadwal obat Anda dan tandai yang sudah diminum.',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                const MedicationPage(isPatientRole: true),
                       ),
                     );
-                  } else if (state is ConnectedDoctorLoaded) {
-                    displayedDoctor = state.doctorData;
-                  } else if (state is ConnectedDoctorError) {
-                    displayMessage = state.message;
-                  } else {
-                    displayMessage = 'Memuat status koneksi dokter...';
-                  }
-
-                  return _buildConnectedDoctorSection(
-                    context,
-                    displayedDoctor,
-                    displayMessage,
-                  );
-                },
-              ),
-              const SizedBox(height: 30), // Increased spacing
-
-              _buildFeatureCard(
-                context,
-                icon: Icons.access_time_outlined,
-                title: 'Jadwal Konsumsi Obat',
-                subtitle:
-                    'Lihat jadwal obat Anda dan tandai yang sudah diminum.',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              const MedicationPage(isPatientRole: true),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16), // Spacing between cards
-              _buildFeatureCard(
-                context,
-                icon: Icons.history_edu_outlined,
-                title: 'Riwayat Konsumsi Obat',
-                subtitle: 'Periksa riwayat obat yang sudah Anda minum.',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => const MedicationPage(
-                            isHistory: true,
-                            isPatientRole: true,
-                          ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16), // Spacing between cards
-              _buildFeatureCard(
-                context,
-                icon: Icons.person_outline,
-                title: 'Profil Saya',
-                subtitle: 'Lihat dan perbarui informasi profil pribadi Anda.',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PasienProfileScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 30),
-            ],
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildFeatureCard(
+                  context,
+                  icon: Icons.history_edu_outlined,
+                  title: 'Riwayat Konsumsi Obat',
+                  subtitle: 'Periksa riwayat obat yang sudah Anda minum.',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => const MedicationPage(
+                              isHistory: true,
+                              isPatientRole: true,
+                            ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildFeatureCard(
+                  context,
+                  icon: Icons.person_outline,
+                  title: 'Profil Saya',
+                  subtitle: 'Lihat dan perbarui informasi profil pribadi Anda.',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PasienProfileScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // Bagian _buildConnectedDoctorSection dan _buildFeatureCard (tidak ada perubahan)
   Widget _buildConnectedDoctorSection(
     BuildContext context,
     DoctorData? doctor,
@@ -235,75 +389,60 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
     if (doctor != null) {
       return Card(
         margin: const EdgeInsets.symmetric(vertical: 8.0),
-        elevation: 6.0, // Increased elevation
-        shadowColor: AppColors.deepPurple.withOpacity(
-          0.3,
-        ), // Soft purple shadow
+        elevation: 6.0,
+        shadowColor: AppColors.deepPurple.withOpacity(0.3),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0), // More rounded corners
-          side: const BorderSide(
-            color: AppColors.light,
-            width: 0.5,
-          ), // Subtle light border
+          borderRadius: BorderRadius.circular(20.0),
+          side: const BorderSide(color: AppColors.light, width: 0.5),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(24.0), // Increased padding
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(
-                      10.0,
-                    ), // Padding for icon background
+                    padding: const EdgeInsets.all(10.0),
                     decoration: BoxDecoration(
-                      color: AppColors.deepPurple.withOpacity(
-                        0.15,
-                      ), // Deep purple with opacity
-                      shape: BoxShape.circle, // Circular background
+                      color: AppColors.deepPurple.withOpacity(0.15),
+                      shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.health_and_safety_outlined,
-                      size: 32, // Larger icon
-                      color: AppColors.deepPurple, // Deep purple icon
+                      size: 32,
+                      color: AppColors.deepPurple,
                     ),
                   ),
-                  const SizedBox(width: 16), // Increased spacing
+                  const SizedBox(width: 16),
                   const Text(
                     'Terhubung dengan Dokter:',
                     style: TextStyle(
-                      fontSize: 18, // Larger font
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.deepPurple, // Deep purple text
+                      color: AppColors.deepPurple,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16), // Increased spacing
+              const SizedBox(height: 16),
               Text(
                 doctor.name,
                 style: const TextStyle(
-                  fontSize: 22, // Larger font
+                  fontSize: 22,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.black, // Black text
+                  color: AppColors.black,
                 ),
               ),
-              const SizedBox(height: 8), // Adjusted spacing
+              const SizedBox(height: 8),
               Text(
                 'Spesialisasi: ${doctor.specialization}',
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.grey,
-                ), // Grey text
+                style: const TextStyle(fontSize: 15, color: AppColors.grey),
               ),
-              const SizedBox(height: 4), // Adjusted spacing
+              const SizedBox(height: 4),
               Text(
                 'Telp: ${doctor.phoneNumber}',
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.grey,
-                ), // Grey text
+                style: const TextStyle(fontSize: 15, color: AppColors.grey),
               ),
             ],
           ),
@@ -312,59 +451,47 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
     } else {
       return Card(
         margin: const EdgeInsets.symmetric(vertical: 8.0),
-        elevation: 6.0, // Increased elevation
-        shadowColor: AppColors.redCustom.withOpacity(
-          0.3,
-        ), // Soft red shadow for warning
+        elevation: 6.0,
+        shadowColor: AppColors.redCustom.withOpacity(0.3),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0), // More rounded corners
-          side: const BorderSide(
-            color: AppColors.light,
-            width: 0.5,
-          ), // Subtle light border
+          borderRadius: BorderRadius.circular(20.0),
+          side: const BorderSide(color: AppColors.light, width: 0.5),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(24.0), // Increased padding
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(
-                      10.0,
-                    ), // Padding for icon background
+                    padding: const EdgeInsets.all(10.0),
                     decoration: BoxDecoration(
-                      color: AppColors.redCustom.withOpacity(
-                        0.15,
-                      ), // Red with opacity for warning
-                      shape: BoxShape.circle, // Circular background
+                      color: AppColors.redCustom.withOpacity(0.15),
+                      shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.person_off_outlined,
-                      size: 32, // Larger icon
-                      color: AppColors.redCustom, // Red warning icon
+                      size: 32,
+                      color: AppColors.redCustom,
                     ),
                   ),
-                  const SizedBox(width: 16), // Increased spacing
+                  const SizedBox(width: 16),
                   const Text(
                     'Status Koneksi Dokter:',
                     style: TextStyle(
-                      fontSize: 18, // Larger font
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.redCustom, // Red warning text
+                      color: AppColors.redCustom,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16), // Increased spacing
+              const SizedBox(height: 16),
               Text(
                 message ??
                     'Anda belum terhubung dengan dokter manapun. Dokter Anda dapat menghubungkan Anda menggunakan ID unik Anda (ID Pasien yang tersedia di halaman Profil).',
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: AppColors.grey,
-                ), // Grey text
+                style: const TextStyle(fontSize: 16, color: AppColors.grey),
               ),
             ],
           ),
@@ -382,39 +509,28 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
-      elevation: 6.0, // Increased elevation
-      shadowColor: AppColors.deepPurple.withOpacity(0.3), // Soft purple shadow
+      elevation: 6.0,
+      shadowColor: AppColors.deepPurple.withOpacity(0.3),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.0), // More rounded corners
-        side: const BorderSide(
-          color: AppColors.light,
-          width: 0.5,
-        ), // Subtle light border
+        borderRadius: BorderRadius.circular(20.0),
+        side: const BorderSide(color: AppColors.light, width: 0.5),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20.0), // Match card border radius
+        borderRadius: BorderRadius.circular(20.0),
         child: Padding(
-          padding: const EdgeInsets.all(24.0), // Increased padding
+          padding: const EdgeInsets.all(24.0),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(
-                  10.0,
-                ), // Padding for icon background
+                padding: const EdgeInsets.all(10.0),
                 decoration: BoxDecoration(
-                  color: AppColors.deepPurple.withOpacity(
-                    0.15,
-                  ), // Deep purple with opacity
-                  shape: BoxShape.circle, // Circular background
+                  color: AppColors.deepPurple.withOpacity(0.15),
+                  shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: AppColors.deepPurple,
-                ), // Larger, deep purple icon
+                child: Icon(icon, size: 32, color: AppColors.deepPurple),
               ),
-              const SizedBox(width: 16), // Increased spacing
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,18 +538,18 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 20, // Larger font
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.black, // Black title
+                        color: AppColors.black,
                       ),
                     ),
-                    const SizedBox(height: 6), // Adjusted spacing
+                    const SizedBox(height: 6),
                     Text(
                       subtitle,
                       style: const TextStyle(
                         fontSize: 15,
                         color: AppColors.grey,
-                      ), // Grey subtitle
+                      ),
                     ),
                   ],
                 ),
@@ -442,7 +558,7 @@ class _PasienHomeScreenState extends State<PasienHomeScreen> {
                 Icons.arrow_forward_ios,
                 color: AppColors.grey,
                 size: 20,
-              ), // Grey arrow icon
+              ),
             ],
           ),
         ),

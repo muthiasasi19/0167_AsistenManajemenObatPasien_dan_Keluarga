@@ -1,12 +1,12 @@
 import 'package:bloc/bloc.dart';
-
+import 'dart:async';
 import 'package:manajemen_obat/data/models/repository/patient_repository.dart';
 import 'package:manajemen_obat/data/models/response/doctor_response_model.dart';
 import 'dart:developer';
 import 'package:manajemen_obat/data/models/response/patient_response_model.dart';
 import 'package:manajemen_obat/data/models/response/patient_search_result_model.dart';
-part 'patient_event.dart';
 
+part 'patient_event.dart';
 part 'patient_state.dart';
 
 class PatientBloc extends Bloc<PatientEvent, PatientState> {
@@ -21,8 +21,9 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
     on<ConnectPatientRequested>(_onConnectPatientRequested);
 
     on<SearchConnectedPatientsRequested>(_onSearchConnectedPatientsRequested);
-
     on<GetConnectedDoctorRequested>(_onGetConnectedDoctorRequested);
+
+    // FITUR MAPS: Pastikan ini didaftarkan
   }
 
   Future<void> _onGetConnectedDoctorRequested(

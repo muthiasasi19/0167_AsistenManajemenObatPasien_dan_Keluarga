@@ -1,4 +1,3 @@
-// lib/data/models/repository/family_repository.dart
 import 'dart:convert';
 import 'dart:developer';
 import 'package:dartz/dartz.dart';
@@ -19,8 +18,6 @@ class FamilyRepository {
   FamilyRepository(this._httpClient);
 
   // Helper untuk mendapatkan ID internal keluarga dari local storage
-  // INILOH: Fungsi ini tetap ada sebagai fallback atau untuk keperluan lain,
-  // tapi kita akan mencoba menghindari ketergantungan langsung padanya di BLoC untuk timing.
   Future<int?> _getFamilyGlobalIdFromLocalStorage() async {
     final userDataString = await _secureStorage.read(key: 'userData');
     if (userDataString != null) {
@@ -39,7 +36,7 @@ class FamilyRepository {
       log(
         "FamilyRepository: Mengirim request koneksi keluarga ke pasien: ${request.patientUniqueId}",
       );
-      // INILOH: request.toMap() sekarang diharapkan berisi familyId dan familyGlobalId
+      // request.toMap() sekarang diharapkan berisi familyId dan familyGlobalId
       // karena sudah ditambahkan ke FamilyConnectRequestModel di Bloc.
       final response = await _httpClient.postWithToken(
         'family/connect-to-patient',
@@ -74,18 +71,14 @@ class FamilyRepository {
   /// @desc Mendapatkan daftar pasien yang terhubung dengan keluarga
   /// @route GET /api/family/my-connected-patients
   Future<Either<String, List<FamilyConnectedPatientData>>>
-  // INILOH: Sekarang metode ini menerima familyGlobalId secara eksplisit
   getConnectedPatientsForFamily({int? familyGlobalId}) async {
-    // INILOH: Menghapus String? familyId karena biasanya hanya satu ID yang dominan untuk API
     try {
-      // INILOH: Gunakan familyGlobalId dari parameter jika tersedia.
-      // Ini adalah prioritas utama untuk mencegah masalah timing.
       final resolvedFamilyGlobalId =
           familyGlobalId ?? await _getFamilyGlobalIdFromLocalStorage();
 
       if (resolvedFamilyGlobalId == null) {
         log(
-          "FamilyRepository: Gagal getConnectedPatientsForFamily, ID Keluarga tidak ditemukan (baik dari parameter maupun local storage).", // INILOH: Log lebih spesifik
+          "FamilyRepository: Gagal getConnectedPatientsForFamily, ID Keluarga tidak ditemukan (baik dari parameter maupun local storage).",
         );
         return const Left("ID Keluarga tidak ditemukan. Mohon login ulang.");
       }
@@ -93,9 +86,6 @@ class FamilyRepository {
         "FamilyRepository: Mengambil daftar pasien terhubung untuk keluarga ID: $resolvedFamilyGlobalId",
       );
 
-      // INILOH: Diasumsikan endpoint 'family/my-connected-patients' mengandalkan token autentikasi.
-      // Jika backend Anda memerlukan familyGlobalId di path (misal: 'family/$resolvedFamilyGlobalId/my-connected-patients'),
-      // Anda HARUS mengubah baris di bawah ini.
       final response = await _httpClient.get('family/my-connected-patients');
 
       log(

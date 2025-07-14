@@ -1,9 +1,7 @@
-// lib/presentation/profil/keluarga_profil_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart'
-    as http; // Tetap menggunakan http untuk logika yang ada
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Tambahkan ini jika userData diambil dari storage
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class KeluargaProfileScreen extends StatefulWidget {
   const KeluargaProfileScreen({super.key});
@@ -22,13 +20,9 @@ class _KeluargaProfileScreenState extends State<KeluargaProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Mengubah _loginAndFetchProfile() menjadi _loadUserProfile()
-    // agar konsisten dengan DokterProfileScreen dan mengambil dari storage
     _loadUserProfile();
   }
 
-  // Mengganti _loginAndFetchProfile() dengan _loadUserProfile()
-  // agar data diambil dari secure storage, bukan hardcode login
   Future<void> _loadUserProfile() async {
     setState(() {
       isLoading = true;
@@ -77,7 +71,7 @@ class _KeluargaProfileScreenState extends State<KeluargaProfileScreen> {
           "Profil Keluarga",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.deepPurple, // Warna berbeda untuk Keluarga
+        backgroundColor: Colors.deepPurple,
         centerTitle: true,
         elevation: 0,
       ),
@@ -137,36 +131,28 @@ class _KeluargaProfileScreenState extends State<KeluargaProfileScreen> {
                     _buildProfileInfoRow(
                       icon: Icons.vpn_key, // Ikon untuk ID unik keluarga
                       label: "ID Keluarga",
-                      value:
-                          userData!['id_keluarga'] ??
-                          'Tidak tersedia', // Asumsi ada 'id_keluarga'
+                      value: userData!['id_keluarga'] ?? 'Tidak tersedia',
                       iconColor: Colors.deepPurple,
                     ),
                     _buildDivider(),
                     _buildProfileInfoRow(
                       icon: Icons.person,
                       label: "Nama Lengkap",
-                      value:
-                          userData!['nama'] ??
-                          'Tidak tersedia', // Asumsi ada 'nama'
+                      value: userData!['nama'] ?? 'Tidak tersedia',
                       iconColor: Colors.deepPurple,
                     ),
                     _buildDivider(),
                     _buildProfileInfoRow(
                       icon: Icons.phone,
                       label: "Nomor Telepon",
-                      value:
-                          userData!['nomor_telepon'] ??
-                          'Tidak tersedia', // Asumsi ada 'nomor_telepon'
+                      value: userData!['nomor_telepon'] ?? 'Tidak tersedia',
                       iconColor: Colors.deepPurple,
                     ),
                     _buildDivider(),
                     _buildProfileInfoRow(
                       icon: Icons.location_on,
                       label: "Alamat",
-                      value:
-                          userData!['alamat'] ??
-                          'Tidak tersedia', // Asumsi ada 'alamat'
+                      value: userData!['alamat'] ?? 'Tidak tersedia',
                       iconColor: Colors.deepPurple,
                     ),
                     // Tambahkan detail lain sesuai kebutuhan Anda dari userData

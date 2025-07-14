@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 
-import 'package:manajemen_obat/core/core.dart'; // Ensure AppColors is accessible here
-import 'package:manajemen_obat/core/components/spaces.dart'; // Ensure Spaces is accessible
+import 'package:manajemen_obat/core/core.dart';
+import 'package:manajemen_obat/core/components/spaces.dart';
 import 'package:manajemen_obat/presentation/Home/patient_management_page.dart';
 import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 import 'package:manajemen_obat/presentation/profil/dokter_profil_screen.dart';
@@ -53,7 +53,7 @@ class _DokterHomeScreenState extends State<DokterHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- UI for Loading State ---
+    //  UI for Loading State
     // Displays a full-screen loading indicator while data is being fetched.
     if (isLoading) {
       return Scaffold(
@@ -241,7 +241,6 @@ class _DokterHomeScreenState extends State<DokterHomeScreen> {
               color: AppColors.white, // White indicator on purple background
               backgroundColor: AppColors.deepPurple, // Background of indicator
               child: SingleChildScrollView(
-                // Adjust top padding to leave space for the curved background and initial part of the welcome card
                 padding: const EdgeInsets.only(
                   top: 100,
                   left: 24.0,
@@ -324,12 +323,7 @@ class _DokterHomeScreenState extends State<DokterHomeScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(
-                      height: 35,
-                    ), // Increased spacing after welcome card
-                    // Feature Cards Section
-                    // Using Align.centerLeft to push cards to the left, but overall column is centered
-                    // This creates a staggered/offset look if combined with a parent alignment
+                    const SizedBox(height: 35),
                     Align(
                       alignment:
                           Alignment
@@ -341,9 +335,7 @@ class _DokterHomeScreenState extends State<DokterHomeScreen> {
                         children: [
                           _buildFeatureCard(
                             context,
-                            icon:
-                                Icons
-                                    .group_add_outlined, // More inviting icon for patient management
+                            icon: Icons.group_add_outlined,
                             title: 'Kelola Pasien & Obat',
                             subtitle:
                                 'Hubungkan diri Anda dengan pasien baru atau kelola daftar pasien yang sudah terdaftar.',

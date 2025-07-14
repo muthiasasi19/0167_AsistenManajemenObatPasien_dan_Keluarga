@@ -1,4 +1,3 @@
-// lib/bloc/doctor/doctor_event.dart
 part of 'doctor_bloc.dart';
 
 sealed class DoctorEvent {
@@ -56,8 +55,7 @@ class DeleteMedicationRequested extends DoctorEvent {
 // Event untuk memuat daftar obat (resep) untuk pasien tertentu (oleh dokter)
 class ViewPatientMedicationsRequested extends DoctorEvent {
   final String patientUniqueId;
-  final int
-  patientGlobalId; // Tambahkan ini jika diperlukan untuk MedicationRepository
+  final int patientGlobalId;
   const ViewPatientMedicationsRequested({
     required this.patientUniqueId,
     required this.patientGlobalId,
@@ -67,12 +65,9 @@ class ViewPatientMedicationsRequested extends DoctorEvent {
 // Event untuk memuat riwayat konsumsi obat pasien tertentu (oleh dokter)
 class ViewPatientMedicationHistoryRequested extends DoctorEvent {
   final String patientUniqueId;
-  final int
-  patientGlobalId; // Tambahkan ini jika diperlukan untuk MedicationRepository
+  final int patientGlobalId;
   const ViewPatientMedicationHistoryRequested({
     required this.patientUniqueId,
     required this.patientGlobalId,
   });
-
-  //Profil
 }

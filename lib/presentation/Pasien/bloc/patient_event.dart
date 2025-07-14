@@ -1,3 +1,4 @@
+// lib/presentation/pasien/bloc/patient_event.dart
 part of 'patient_bloc.dart';
 
 sealed class PatientEvent {
@@ -8,9 +9,7 @@ sealed class PatientEvent {
 class ConnectPatientRequested extends PatientEvent {
   final String patientUniqueId; // ID unik pasien yang ingin dihubungkan
 
-  const ConnectPatientRequested({
-    required this.patientUniqueId,
-  }); // Tambahkan const
+  const ConnectPatientRequested({required this.patientUniqueId});
 }
 
 // Event untuk memuat data profil pasien yang sedang login
@@ -20,7 +19,7 @@ class LoadPatientProfileRequested extends PatientEvent {
 
 // Event ketika request untuk memuat daftar pasien dikirim
 class PatientsRequested extends PatientEvent {
-  const PatientsRequested(); // Tambahkan const
+  const PatientsRequested();
 }
 
 class SearchConnectedPatientsRequested extends PatientEvent {
@@ -34,3 +33,4 @@ class SearchConnectedPatientsRequested extends PatientEvent {
 class GetConnectedDoctorRequested extends PatientEvent {
   const GetConnectedDoctorRequested();
 }
+// FIX ERROR: TIL HERE

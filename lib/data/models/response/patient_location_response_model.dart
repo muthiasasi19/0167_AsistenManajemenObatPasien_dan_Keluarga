@@ -26,7 +26,7 @@ class PatientLocationResponseModel {
 class PatientLocationData {
   final double? latitude;
   final double? longitude;
-  final String? timestamp; // DATETIME string dari backend
+  final String? timestamp;
 
   PatientLocationData({this.latitude, this.longitude, this.timestamp});
 
@@ -37,8 +37,14 @@ class PatientLocationData {
 
   factory PatientLocationData.fromMap(Map<String, dynamic> json) =>
       PatientLocationData(
-        latitude: (json["latitude"] as num?)?.toDouble(), // Pastikan double
-        longitude: (json["longitude"] as num?)?.toDouble(), // Pastikan double
+        latitude:
+            json["latitude"] != null
+                ? double.tryParse(json["latitude"].toString())
+                : null,
+        longitude:
+            json["longitude"] != null
+                ? double.tryParse(json["longitude"].toString())
+                : null,
         timestamp: json["timestamp"] as String?,
       );
 

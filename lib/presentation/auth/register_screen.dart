@@ -3,12 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:manajemen_obat/data/models/request/register_request_model.dart';
 import 'package:manajemen_obat/presentation/auth/bloc/register/register_bloc.dart';
-import 'package:manajemen_obat/core/components/spaces.dart'; // Tetap gunakan SpaceHeight
-import 'package:manajemen_obat/core/core.dart'; // Untuk AppColors dan context.push
-import 'package:manajemen_obat/presentation/auth/login_screen.dart'; // Untuk navigasi kembali
-
-// Opsional: Jika Anda masih ingin menggunakan Button.filled dari file components.dart
-// import 'package:manajemen_obat/core/components/components.dart';
+import 'package:manajemen_obat/core/components/spaces.dart';
+import 'package:manajemen_obat/core/core.dart';
+import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -60,7 +57,7 @@ class _RegisterPageState extends State<RegisterPage> {
       prefixIcon: prefixIcon,
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0), // Consistent rounded corners
+        borderRadius: BorderRadius.circular(12.0),
         borderSide: const BorderSide(
           color: AppColors.light,
         ), // Lighter grey border
@@ -73,10 +70,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(
-          color: AppColors.deepPurple, // Deep purple border when focused
-          width: 2.0,
-        ),
+        borderSide: const BorderSide(color: AppColors.deepPurple, width: 2.0),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.0),
@@ -89,7 +83,7 @@ class _RegisterPageState extends State<RegisterPage> {
         borderSide: const BorderSide(color: AppColors.red, width: 2.0),
       ),
       filled: true,
-      fillColor: AppColors.white, // White fill
+      fillColor: AppColors.white,
     );
   }
 
@@ -112,7 +106,6 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // Helper method to build dynamic form fields based on selected role
   Widget _buildFormField() {
     if (selectedRole == 'pasien') {
       return Column(
@@ -130,10 +123,9 @@ class _RegisterPageState extends State<RegisterPage> {
               return null;
             },
             onChanged: (value) {
-              // Trigger validasi ulang saat teks berubah
               if (_formKey.currentState != null &&
                   !_formKey.currentState!.validate()) {
-                setState(() {}); // Memaksa rebuild untuk menghapus error
+                setState(() {});
               }
             },
           ),
@@ -380,13 +372,13 @@ class _RegisterPageState extends State<RegisterPage> {
         ],
       );
     }
-    return const SizedBox(); // Fallback if no role is selected (should not happen with default)
+    return const SizedBox();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightSheet, // Consistent background color
+      backgroundColor: AppColors.lightSheet,
       appBar: AppBar(
         title: const Text(
           'Registrasi Pengguna',
@@ -396,11 +388,9 @@ class _RegisterPageState extends State<RegisterPage> {
             fontSize: 20,
           ),
         ),
-        backgroundColor: AppColors.deepPurple, // Consistent AppBar color
+        backgroundColor: AppColors.deepPurple,
         elevation: 0,
-        iconTheme: const IconThemeData(
-          color: AppColors.white,
-        ), // White back icon
+        iconTheme: const IconThemeData(color: AppColors.white),
       ),
       body: BlocListener<RegisterBloc, RegisterState>(
         listener: (context, state) {
@@ -422,24 +412,23 @@ class _RegisterPageState extends State<RegisterPage> {
           }
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0), // Increased padding
+          padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center, // Center contents
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SpaceHeight(20), // Top spacing
+                const SpaceHeight(20),
 
                 Text(
                   'DAFTAR AKUN BARU',
                   style: TextStyle(
                     fontSize: MediaQuery.of(context).size.width * 0.06,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepPurple, // Deep purple for title
+                    color: AppColors.deepPurple,
                   ),
                 ),
-                const SpaceHeight(30), // Spacing after title
-                // Dropdown for Role Selection
+                const SpaceHeight(30),
                 DropdownButtonFormField<String>(
                   value: selectedRole,
                   items: const [
@@ -483,8 +472,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     hintText: null,
                   ), // Clear hintText as labelText is used
                 ),
-                const SpaceHeight(16), // Spacing after role dropdown
-                // Username and Password Fields
+                const SpaceHeight(16),
                 TextFormField(
                   controller: usernameController,
                   decoration: _inputDecoration(
@@ -504,7 +492,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     }
                   },
                 ),
-                const SpaceHeight(16), // Spacing
+                const SpaceHeight(16),
                 TextFormField(
                   controller: passwordController,
                   obscureText: _obscureText,
@@ -515,7 +503,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureText ? Icons.visibility : Icons.visibility_off,
-                        color: AppColors.grey, // Consistent icon color
+                        color: AppColors.grey,
                       ),
                       onPressed: () {
                         setState(() {
@@ -539,9 +527,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
                 const SpaceHeight(20), // Spacing
-                // Dynamic Form Fields based on Role
                 _buildFormField(),
-                const SpaceHeight(30), // Spacing before button
+                const SpaceHeight(30),
                 // Register Button
                 BlocBuilder<RegisterBloc, RegisterState>(
                   builder: (context, state) {
@@ -618,17 +605,14 @@ class _RegisterPageState extends State<RegisterPage> {
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(55), // Taller button
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            12,
-                          ), // Rounded corners
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        backgroundColor:
-                            AppColors.deepPurple, // Deep purple button
-                        foregroundColor: AppColors.white, // White text
+                        backgroundColor: AppColors.deepPurple,
+                        foregroundColor: AppColors.white,
                         textStyle: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                        ), // Larger, bolder text
+                        ),
                       ),
                       child: Text(
                         state is RegisterLoading ? 'Memuat...' : 'Daftar',
@@ -636,16 +620,13 @@ class _RegisterPageState extends State<RegisterPage> {
                     );
                   },
                 ),
-                const SpaceHeight(20), // Spacing
-                // "Sudah memiliki akun?" link
+                const SpaceHeight(20),
                 Text.rich(
                   TextSpan(
                     text: 'Sudah memiliki akun? Silahkan ',
                     style: TextStyle(
                       color: AppColors.grey,
-                      fontSize:
-                          MediaQuery.of(context).size.width *
-                          0.035, // Adjusted font size
+                      fontSize: MediaQuery.of(context).size.width * 0.035,
                     ),
                     children: [
                       TextSpan(
@@ -653,13 +634,11 @@ class _RegisterPageState extends State<RegisterPage> {
                         style: const TextStyle(
                           color: AppColors.deepPurple,
                           fontWeight: FontWeight.bold,
-                        ), // Deep purple, bold link
+                        ),
                         recognizer:
                             TapGestureRecognizer()
                               ..onTap = () {
-                                context.push(
-                                  const LoginScreen(),
-                                ); // Navigate to LoginScreen
+                                context.push(const LoginScreen());
                               },
                       ),
                     ],

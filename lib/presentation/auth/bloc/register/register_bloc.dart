@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:manajemen_obat/data/models/request/register_request_model.dart';
 import 'package:manajemen_obat/data/models/repository/auth_repository.dart';
-import 'package:flutter/foundation.dart'; // Untuk debugPrint
+import 'package:flutter/foundation.dart';
 
 part 'register_event.dart';
 part 'register_state.dart';
@@ -32,6 +32,4 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
       },
     );
   }
-
-  // PASTIKAN TIDAK ADA EKSTENSI SALAH DI SINI LAGI!
 }

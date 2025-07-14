@@ -3,8 +3,7 @@ import 'dart:developer' as developer;
 
 // Model untuk satu objek pasien
 class Patient {
-  final String
-  id; // ID global pasien dari backend (INT, tapi di Flutter String karena dari .toString())
+  final String id; // ID global pasien dari backend
   final String name;
   final String
   patientId; // ID unik pasien dari backend (VARCHAR, misal: 'PSN...')
@@ -12,8 +11,7 @@ class Patient {
   final String? gender;
   final String? phoneNumber;
   final String? address;
-  final String?
-  connectedDoctorId; // ID Dokter yang terhubung dengan pasien ini (optional)
+  final String? connectedDoctorId; // ID Dokter yang terhubung dengan pasien ini
 
   Patient({
     required this.id,
@@ -34,7 +32,6 @@ class Patient {
     developer.log('[Patient.fromMap] Raw JSON: $json');
 
     // Backend mengirim: patientGlobalId, patientUniqueId, patientName
-    // Frontend harus memetakan ke: id, patientId, name
 
     final String id =
         json["patientGlobalId"]?.toString() ??
@@ -53,8 +50,6 @@ class Patient {
     final String? connectedDoctorId =
         json["doctorId"]?.toString(); // Mengambil dari "doctorId"
 
-    // SAMPAI BAGIAN INI: Memperbaiki pemetaan kunci JSON.
-
     developer.log(
       '[Patient.fromMap] Parsed Patient: Name="$name", PatientID="$patientId", GlobalID="$id"',
     );
@@ -72,17 +67,15 @@ class Patient {
   }
 
   Map<String, dynamic> toMap() => {
-    // DARI BAGIAN INI: Sesuaikan kunci saat mengirim ke backend jika diperlukan.
-    // Ini adalah kunci yang akan digunakan saat Patient objek diubah menjadi Map/JSON.
-    "patientGlobalId": id, // Nama kunci yang backend harapkan jika ini dikirim
-    "patientUniqueId": patientId, // Nama kunci yang backend harapkan
-    "patientName": name, // Nama kunci yang backend harapkan
+    // kunci yang akan digunakan saat Patient objek diubah menjadi Map
+    "patientGlobalId": id,
+    "patientUniqueId": patientId,
+    "patientName": name,
     "dateOfBirth": dateOfBirth,
     "gender": gender,
     "phoneNumber": phoneNumber,
     "address": address,
-    "doctorId": connectedDoctorId, // Nama kunci yang backend harapkan
-    // SAMPAI BAGIAN INI: Sesuaikan kunci saat mengirim ke backend jika diperlukan.
+    "doctorId": connectedDoctorId,
   };
 
   void fold(
@@ -139,4 +132,3 @@ class SinglePatientResponseModel {
 
   Map<String, dynamic> toMap() => {"message": message, "data": data?.toMap()};
 }
-// AKU PERBAIKI SAMPAI SINI

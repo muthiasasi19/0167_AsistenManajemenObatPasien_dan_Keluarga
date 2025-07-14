@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:dartz/dartz.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:manajemen_obat/data/models/response/patient_location_response_model.dart';
 import 'package:manajemen_obat/service/Storage_Helper.dart';
 import 'package:manajemen_obat/service/service_http_client.dart';
 import 'package:manajemen_obat/data/models/response/patient_response_model.dart';
@@ -18,13 +19,12 @@ class PatientRepository {
     final userDataString = await _secureStorage.read(key: 'userData');
     if (userDataString != null) {
       final userData = jsonDecode(userDataString);
-      // Asumsi 'id_dokter' ada di userData untuk role dokter, jika tidak ada, akan null
       return userData['id_dokter']?.toString();
     }
     return null;
   }
 
-  //  Mendapatkan Dokter Terhubung untuk Pasien ---
+  //  Mendapatkan Dokter Terhubung untuk Pasien
   Future<Either<String, DoctorData>> getConnectedDoctor(
     String patientUniqueId,
   ) async {
@@ -58,7 +58,6 @@ class PatientRepository {
           developer.log(
             "PatientRepository - getConnectedDoctor: Pasien belum terhubung dengan dokter manapun (data: null).",
           );
-          // Return Left dengan pesan yang sesuai, bukan Left(null)
           return const Left('Pasien belum terhubung dengan dokter manapun.');
         }
       } else {
@@ -230,13 +229,120 @@ class PatientRepository {
   Future<Patient> getPatientProfile() async {
     try {
       final response = await _httpClient.get(
-        // <<-- Menggunakan _httpClient, token otomatis ditangani
+        // Menggunakan _httpClient, token otomatis ditangani
         '/patient/profile',
       );
       return Patient.fromJson(response.body);
     } catch (e) {
       print('Error fetching patient profile: $e'); // Untuk debugging
       rethrow;
+    }
+  }
+
+  // FITUR MAPS: Fungsi untuk pasien mengirimkan lokasi terkini
+  Future<Either<String, PatientLocationData>> sendPatientLocation(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      developer.log(
+        "PatientRepository: Mengirim lokasi pasien: Lat $latitude, Long $longitude",
+      );
+      final response = await _httpClient.postWithToken(
+        'patient/location', // Sesuai dengan route yang ditambahkan di backend
+        {'latitude': latitude, 'longitude': longitude},
+      );
+
+      developer.log(
+        "PatientRepository - sendPatientLocation: Status Code: ${response.statusCode}",
+      );
+      developer.log(
+        "PatientRepository - sendPatientLocation: Body: ${response.body}",
+      );
+
+      if (response.statusCode == 200) {
+        final responseModel = PatientLocationResponseModel.fromJson(
+          response.body,
+        );
+        if (responseModel.data != null) {
+          developer.log(
+            "PatientRepository - sendPatientLocation: Berhasil, lokasi diperbarui.",
+          );
+          return Right(responseModel.data!);
+        } else {
+          developer.log(
+            "PatientRepository - sendPatientLocation: Berhasil, namun data lokasi kosong.",
+          );
+          return const Left(
+            "Lokasi berhasil dikirim, namun data respons kosong.",
+          );
+        }
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['message'] ?? 'Gagal mengirim lokasi pasien.';
+        developer.log(
+          "PatientRepository - sendPatientLocation: Gagal (${response.statusCode}): $message",
+        );
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        "PatientRepository - sendPatientLocation Error: $e\n$stackTrace",
+      );
+      return const Left("Terjadi kesalahan saat mengirim lokasi pasien.");
+    }
+  }
+
+  // FITUR MAPS: Fungsi untuk keluarga mendapatkan lokasi pasien
+  Future<Either<String, PatientLocationData>> getPatientLocationForFamily(
+    int patientGlobalId,
+  ) async {
+    try {
+      developer.log(
+        "PatientRepository: Mengambil lokasi pasien global ID: $patientGlobalId",
+      );
+      // Menggunakan endpoint yang sudah ada di familyController.js
+      final response = await _httpClient.get(
+        'family/patients/$patientGlobalId/location',
+      );
+
+      developer.log(
+        "PatientRepository - getPatientLocationForFamily: Status Code: ${response.statusCode}",
+      );
+      developer.log(
+        "PatientRepository - getPatientLocationForFamily: Body: ${response.body}",
+      );
+
+      if (response.statusCode == 200) {
+        final responseModel = PatientLocationResponseModel.fromJson(
+          response.body,
+        );
+        if (responseModel.data != null) {
+          developer.log(
+            "PatientRepository - getPatientLocationForFamily: Berhasil, lokasi ditemukan.",
+          );
+          return Right(responseModel.data!);
+        } else {
+          developer.log(
+            "PatientRepository - getPatientLocationForFamily: Data lokasi kosong.",
+          );
+          return const Left(
+            "Lokasi pasien belum tersedia atau tidak ditemukan.",
+          );
+        }
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['message'] ?? 'Gagal memuat lokasi pasien.';
+        developer.log(
+          "PatientRepository - getPatientLocationForFamily: Gagal (${response.statusCode}): $message",
+        );
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        "PatientRepository - getPatientLocationForFamily Error: $e\n$stackTrace",
+      );
+      return const Left("Terjadi kesalahan saat memuat lokasi pasien.");
     }
   }
 }

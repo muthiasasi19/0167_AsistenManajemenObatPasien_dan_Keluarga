@@ -6,8 +6,7 @@ sealed class MedicationEvent {
 
 class GetMedicationsRequested extends MedicationEvent {
   final String? patientUniqueId;
-  final int?
-  patientGlobalId; // Tetap sertakan jika memang ada niat untuk digunakan di masa depan/logging
+  final int? patientGlobalId;
   final bool isForPatientOrFamilyToday;
   final bool isForDoctorScheduled;
   const GetMedicationsRequested({
@@ -26,10 +25,8 @@ class GetMedicationsRequested extends MedicationEvent {
 }
 
 class GetMedicationHistoryRequested extends MedicationEvent {
-  // Sama seperti GetMedicationsRequested, repository saat ini hanya memanfaatkan patientUniqueId
-  // (atau currentUser.idPasien).
   final String? patientUniqueId;
-  final int? patientGlobalId; // Tetap sertakan
+  final int? patientGlobalId;
 
   const GetMedicationHistoryRequested({
     this.patientUniqueId,
@@ -38,14 +35,10 @@ class GetMedicationHistoryRequested extends MedicationEvent {
          patientUniqueId != null || patientGlobalId != null,
          'patientUniqueId or patientGlobalId must be provided for GetMedicationHistoryRequested',
        );
-
-  // Jika Anda menggunakan equatable, tambahkan props
-  // @override
-  // List<Object?> get props => [patientUniqueId, patientGlobalId];
 }
 
 class AddMedicationRequested extends MedicationEvent {
-  final String? patientUniqueId; // Untuk dokter (jika menambah via unique ID)
+  final String? patientUniqueId;
   final int? patientGlobalId;
   final AddMedicationRequestModel request;
   final File? photoFile;

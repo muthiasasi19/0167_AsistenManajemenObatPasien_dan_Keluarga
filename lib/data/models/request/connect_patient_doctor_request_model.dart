@@ -12,8 +12,7 @@ class ConnectPatientRequestModel {
   String toJson() => json.encode(toMap());
 
   Map<String, dynamic> toMap() => {
-    "patientUniqueId":
-        patientUniqueId, // Sesuaikan dengan kunci yang diharapkan backend
-    "doctorId": doctorId, // Sesuaikan dengan kunci yang diharapkan backend
+    "patientUniqueId": patientUniqueId,
+    "doctorId": doctorId,
   };
 }

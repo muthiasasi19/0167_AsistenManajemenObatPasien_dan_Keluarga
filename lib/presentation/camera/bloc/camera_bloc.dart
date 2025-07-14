@@ -1,9 +1,8 @@
-// File: lib/presentation/camera/bloc/camera_bloc.dart
-import 'dart:io'; // Untuk File
+import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image_picker/image_picker.dart'; // Import ImagePicker
-import 'dart:developer' as developer; // Untuk logging
+import 'dart:developer' as developer;
 
 part 'camera_event.dart';
 part 'camera_state.dart';
@@ -34,9 +33,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         emit(CameraImagePickedSuccess(imageFile));
       } else {
         developer.log('CameraBloc: Image picking cancelled by user (gallery).');
-        emit(
-          CameraError('Pemilihan gambar dibatalkan.'),
-        ); // Bisa jadi kembali ke CameraInitial atau state sebelumnya
+        emit(CameraError('Pemilihan gambar dibatalkan.'));
       }
     } catch (e, st) {
       developer.log('CameraBloc: Error picking image from gallery: $e\n$st');
@@ -59,9 +56,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         emit(CameraImagePickedSuccess(imageFile));
       } else {
         developer.log('CameraBloc: Image taking cancelled by user (camera).');
-        emit(
-          CameraError('Pengambilan gambar dibatalkan.'),
-        ); // Bisa jadi kembali ke CameraInitial atau state sebelumnya
+        emit(CameraError('Pengambilan gambar dibatalkan.'));
       }
     } catch (e, st) {
       developer.log('CameraBloc: Error taking image from camera: $e\n$st');
