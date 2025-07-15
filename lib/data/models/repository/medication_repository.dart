@@ -363,7 +363,6 @@ class MedicationRepository {
           ), // Convert schedule to JSON string
           'description': request.description ?? '',
         };
-        // photoUrl tidak dikirim di fields jika ada photoFile karena backend akan menghasilkan yang baru
 
         final response = await _httpClient.postMultipart(
           endpoint,
