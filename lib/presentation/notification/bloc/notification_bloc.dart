@@ -64,7 +64,13 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
           ),
         );
         // Setelah sukses, muat ulang jadwal untuk memperbarui UI
-        emit(NotificationLoading()); // Emit loading sebelum memuat ulang
+        final currentState = state;
+        if (currentState is NotificationLoaded) {
+          final updatedSchedules = List<NotificationScheduleData>.from(
+            currentState.schedules,
+          )..add(r);
+          emit(NotificationLoaded(schedules: updatedSchedules));
+        } // Emit loading sebelum memuat ulang
         add(
           LoadNotificationSchedulesForMedicationAndPatient(
             medicationGlobalId: event.request.medicationId,
@@ -97,7 +103,15 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
           ),
         );
         // Setelah sukses, muat ulang jadwal untuk memperbarui UI
-        emit(NotificationLoading()); // Emit loading sebelum memuat ulang
+        final currentState = state;
+        if (currentState is NotificationLoaded) {
+          final updatedSchedules =
+              currentState.schedules.map((schedule) {
+                return schedule.id == r.id ? r : schedule;
+              }).toList();
+          emit(NotificationLoaded(schedules: updatedSchedules));
+        }
+        // Emit loading sebelum memuat ulang
         add(
           LoadNotificationSchedulesForMedicationAndPatient(
             medicationGlobalId:

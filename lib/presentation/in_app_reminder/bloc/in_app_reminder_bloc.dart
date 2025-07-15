@@ -39,6 +39,11 @@ class InAppReminderBloc extends Bloc<InAppReminderEvent, InAppReminderState> {
         _currentSchedules = r;
         // Reset triggered reminders for a new load (e.g., app restart)
         _triggeredRemindersToday = {};
+        for (var schedule in r) {
+          developer.log(
+            "InAppReminderBloc: Schedule ID ${schedule.id}, isActive: ${schedule.isActive}",
+          );
+        }
         emit(InAppReminderLoaded(schedules: _currentSchedules));
       },
     );

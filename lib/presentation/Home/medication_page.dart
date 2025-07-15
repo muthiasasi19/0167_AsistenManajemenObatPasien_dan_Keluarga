@@ -624,6 +624,7 @@ class _MedicationPageState extends State<MedicationPage> {
                   );
                 }
               },
+
               builder: (context, state) {
                 if (_currentUserData?.role?.toLowerCase() == 'dokter' &&
                     _currentSelectedPatientUniqueId == null &&

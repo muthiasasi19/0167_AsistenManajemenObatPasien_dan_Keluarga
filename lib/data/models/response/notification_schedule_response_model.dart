@@ -81,7 +81,7 @@ class NotificationScheduleData {
   factory NotificationScheduleData.fromMap(Map<String, dynamic> json) {
     // Handling JSON parsing for recipient_family_ids
     List<int> parsedRecipientFamilyIds = [];
-    if (json["recipientFamilyIds"] != null) {
+    if (json["recipient_family_ids"] != null) {
       if (json["recipient_family_ids"] is String) {
         // Jika dari backend masih berupa string JSON
         try {
@@ -101,8 +101,16 @@ class NotificationScheduleData {
       }
     }
 
+    bool isActiveValue = false;
+    if (json["is_active"] != null) {
+      if (json["is_active"] is bool) {
+        isActiveValue = json["is_active"];
+      } else if (json["is_active"] is int) {
+        isActiveValue = json["is_active"] == 1;
+      }
+    }
+
     return NotificationScheduleData(
-      // PERBAIKAN: Gunakan static const variable yang sudah didefinisikan
       id:
           (json["id"] ??
                   json["notification_id"] ??
@@ -118,25 +126,28 @@ class NotificationScheduleData {
           (json["scheduleTime"] ?? NotificationScheduleData.defaultString)
               as String,
       startDate:
-          json["startDate"] != null
-              ? DateTime.parse(json["startDate"])
+          json["start_date"] != null
+              ? DateTime.parse(json["start_date"])
               : NotificationScheduleData.defaultDateTime,
-      endDate: json["endDate"] == null ? null : DateTime.parse(json["endDate"]),
+      endDate:
+          json["end_date"] == null ? null : DateTime.parse(json["end_date"]),
       isActive:
           (json["isActive"] ?? NotificationScheduleData.defaultBool) as bool,
       recipientFamilyIds: parsedRecipientFamilyIds,
       createdAt:
-          json["createdAt"] != null
-              ? DateTime.parse(json["createdAt"])
+          json["created_at"] != null
+              ? DateTime.parse(json["created_at"])
               : NotificationScheduleData.defaultDateTime,
       updatedAt:
-          json["updatedAt"] == null ? null : DateTime.parse(json["updatedAt"]),
+          json["updated_at"] == null
+              ? null
+              : DateTime.parse(json["updated_at"]),
 
-      medicationName: json["medicationName"] as String?,
-      medicationDosage: json["medicationDosage"] as String?,
-      medicationPhotoUrl: json["medicationPhotoUrl"] as String?,
-      patientName: json["patientName"] as String?,
-      patientUniqueId: json["patientUniqueId"] as String?,
+      medicationName: json["medication_name"] as String?,
+      medicationDosage: json["medication_Dosage"] as String?,
+      medicationPhotoUrl: json["medication_PhotoUrl"] as String?,
+      patientName: json["patient_Name"] as String?,
+      patientUniqueId: json["patient_UniqueId"] as String?,
     );
   }
 
