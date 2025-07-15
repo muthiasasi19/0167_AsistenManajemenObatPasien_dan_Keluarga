@@ -31,20 +31,17 @@ class User {
   final String? username;
   final String? role;
 
-  // --- MULAI PERBAIKAN DI SINI ---
-  // Tambahkan properti untuk ID global (INT) yang dikirim dari payload JWT
-  // Ini adalah yang dicari oleh MedicationRepository (misal: currentUser?.doctorGlobalId)
   final int? patientGlobalId; // Backend JWT payload: patientGlobalId (INT)
   final int? doctorGlobalId; // Backend JWT payload: doctorGlobalId (INT)
   final int? familyGlobalId; // Backend JWT payload: familyGlobalId (INT)
 
   // Pasien-specific fields (yang sudah ada, biarkan tetap)
   final String? idPasien; // Backend: id_pasien (VARCHAR unik, misal PSN...)
-  final String? namaPasien; // Backend: name
-  final String? tanggalLahirPasien; // Backend: dateOfBirth
-  final String? jenisKelaminPasien; // Backend: gender
-  final String? nomorTeleponPasien; // Backend: phoneNumber
-  final String? alamatPasien; // Backend: address
+  final String? namaPasien;
+  final String? tanggalLahirPasien;
+  final String? jenisKelaminPasien;
+  final String? nomorTeleponPasien;
+  final String? alamatPasien;
 
   // Dokter-specific fields (yang sudah ada, biarkan tetap)
   final String? idDokter; // Backend: id_dokter (VARCHAR unik, misal DKTR...)
@@ -58,18 +55,14 @@ class User {
   final String? namaKeluarga; // Backend: name
   final String? nomorTeleponKeluarga; // Backend: phoneNumber
   final String? alamatKeluarga; // Backend: address
-  // --- AKHIR PERBAIKAN DI SINI ---
 
   User({
     this.id,
     this.username,
     this.role,
-    // --- MULAI PERBAIKAN DI SINI ---
-    // Tambahkan properti baru ke konstruktor
     this.patientGlobalId,
     this.doctorGlobalId,
     this.familyGlobalId,
-    // --- AKHIR PERBAIKAN DI SINI ---
     // Pasien
     this.idPasien,
     this.namaPasien,
@@ -94,7 +87,7 @@ class User {
 
   String toJson() => json.encode(toMap());
 
-  // INI PENTING: Memetakan kunci JSON dari backend ke properti Dart
+  // Memetakan  JSON dari backend ke properti Dart
   factory User.fromMap(Map<String, dynamic> json) {
     final String? role = json["role"]?.toLowerCase();
 
@@ -105,20 +98,20 @@ class User {
     String? parsedJenisKelaminPasien;
     String? parsedNomorTeleponPasien;
     String? parsedAlamatPasien;
-    int? parsedPatientGlobalId; // <--- BARU
+    int? parsedPatientGlobalId;
 
     String? parsedIdDokter;
     String? parsedNamaDokter;
     String? parsedSpesialisasiDokter;
     String? parsedNomorTeleponDokter;
     String? parsedAlamatDokter;
-    int? parsedDoctorGlobalId; // <--- BARU
+    int? parsedDoctorGlobalId;
 
     String? parsedIdKeluarga;
     String? parsedNamaKeluarga;
     String? parsedNomorTeleponKeluarga;
     String? parsedAlamatKeluarga;
-    int? parsedFamilyGlobalId; // <--- BARU
+    int? parsedFamilyGlobalId;
 
     // Parsing data berdasarkan peran (role)
     if (role == 'pasien') {
@@ -134,7 +127,7 @@ class User {
               ? json["patientGlobalId"] as int
               : (json["patientGlobalId"] is String
                   ? int.tryParse(json["patientGlobalId"])
-                  : null); // INILOH: Penanganan tipe data ganda (int/string)
+                  : null);
     } else if (role == 'dokter') {
       parsedIdDokter =
           json["id_dokter"] as String?; // Ini adalah ID unik DKTR...
@@ -142,8 +135,7 @@ class User {
       parsedSpesialisasiDokter = json["specialization"] as String?;
       parsedNomorTeleponDokter = json["phoneNumber"] as String?;
       parsedAlamatDokter = json["address"] as String?;
-      parsedDoctorGlobalId =
-          json["doctorGlobalId"] as int?; // <--- BARU: Dari payload JWT
+      parsedDoctorGlobalId = json["doctorGlobalId"] as int?;
     } else if (role == 'keluarga') {
       parsedIdKeluarga =
           json["id_keluarga"] as String?; // Ini adalah ID unik KLG...
@@ -155,19 +147,17 @@ class User {
               ? json["familyGlobalId"] as int
               : (json["familyGlobalId"] is String
                   ? int.tryParse(json["familyGlobalId"])
-                  : null); // INILOH: Penanganan tipe data ganda (int/string)
+                  : null);
     }
 
     return User(
       id: json["id"] as int?,
       username: json["username"] as String?,
       role: json["role"] as String?,
-      // --- MULAI PERBAIKAN DI SINI ---
       // Masukkan properti baru ke konstruktor User
       patientGlobalId: parsedPatientGlobalId,
       doctorGlobalId: parsedDoctorGlobalId,
       familyGlobalId: parsedFamilyGlobalId,
-      // --- AKHIR PERBAIKAN DI SINI ---
       // Pasien
       idPasien: parsedIdPasien,
       namaPasien: parsedNamaPasien,
@@ -189,23 +179,17 @@ class User {
     );
   }
 
-  // toMap() method (digunakan saat objek User perlu dikonversi kembali ke Map, misal untuk disimpan di storage)
   Map<String, dynamic> toMap() {
     final Map<String, dynamic> data = {
       "id": id,
       "username": username,
       "role": role,
-      // --- MULAI PERBAIKAN DI SINI ---
-      // Tambahkan properti baru ke Map
-      // Nama key harus sesuai dengan bagaimana Anda ingin menyimpannya di JSON/local storage
-      // Biasanya sama dengan nama di payload JWT backend
       "patientGlobalId": patientGlobalId,
       "doctorGlobalId": doctorGlobalId,
       "familyGlobalId": familyGlobalId,
-      // --- AKHIR PERBAIKAN DI SINI ---
     };
 
-    // Tambahkan data spesifik peran (sudah benar)
+    // Tambahkan data spesifik peran
     if (role?.toLowerCase() == 'pasien') {
       data["id_pasien"] = idPasien;
       data["name"] = namaPasien;
