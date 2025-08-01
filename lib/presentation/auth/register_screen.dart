@@ -5,6 +5,7 @@ import 'package:manajemen_obat/data/models/request/register_request_model.dart';
 import 'package:manajemen_obat/presentation/auth/bloc/register/register_bloc.dart';
 import 'package:manajemen_obat/core/components/spaces.dart';
 import 'package:manajemen_obat/core/core.dart';
+import 'package:intl/intl.dart';
 import 'package:manajemen_obat/presentation/auth/login_screen.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -20,7 +21,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
   final TextEditingController patientNameController = TextEditingController();
   final TextEditingController patientDobController = TextEditingController();
-  final TextEditingController patientGenderController = TextEditingController();
   final TextEditingController patientPhoneController = TextEditingController();
   final TextEditingController patientAddressController =
       TextEditingController();
@@ -38,6 +38,21 @@ class _RegisterPageState extends State<RegisterPage> {
   String selectedRole = 'pasien';
   final _formKey = GlobalKey<FormState>();
   bool _obscureText = true;
+  String? selectedGender;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        patientDobController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
   // Gaya InputDecoration yang akan digunakan berulang untuk TextFormField
   InputDecoration _inputDecoration(
@@ -93,7 +108,6 @@ class _RegisterPageState extends State<RegisterPage> {
     passwordController.dispose();
     patientNameController.dispose();
     patientDobController.dispose();
-    patientGenderController.dispose();
     patientPhoneController.dispose();
     patientAddressController.dispose();
     doctorNameController.dispose();
@@ -122,16 +136,12 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
-            },
           ),
           const SpaceHeight(10),
           TextFormField(
             controller: patientDobController,
+            readOnly: true,
+            onTap: () => _selectDate(context),
             decoration: _inputDecoration(
               'Tanggal Lahir (YYYY-MM-DD)',
               prefixIcon: const Icon(
@@ -145,16 +155,19 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
-            },
           ),
           const SpaceHeight(10),
-          TextFormField(
-            controller: patientGenderController,
+          DropdownButtonFormField<String>(
+            value: selectedGender,
+            items: const [
+              DropdownMenuItem(value: 'Laki-laki', child: Text('Laki-laki')),
+              DropdownMenuItem(value: 'Perempuan', child: Text('Perempuan')),
+            ],
+            onChanged: (value) {
+              setState(() {
+                selectedGender = value;
+              });
+            },
             decoration: _inputDecoration(
               'Jenis Kelamin',
               prefixIcon: const Icon(Icons.wc, color: AppColors.grey),
@@ -164,12 +177,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 return 'Jenis Kelamin tidak boleh kosong';
               }
               return null;
-            },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
             },
           ),
           const SpaceHeight(10),
@@ -186,12 +193,6 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
-            },
           ),
           const SpaceHeight(10),
           TextFormField(
@@ -205,12 +206,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 return 'Alamat Pasien tidak boleh kosong';
               }
               return null;
-            },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
             },
           ),
         ],
@@ -230,12 +225,6 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
-            },
           ),
           const SpaceHeight(10),
           TextFormField(
@@ -251,12 +240,6 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
-            },
           ),
           const SpaceHeight(10),
           TextFormField(
@@ -270,12 +253,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 return 'Alamat Keluarga tidak boleh kosong';
               }
               return null;
-            },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
             },
           ),
         ],
@@ -298,12 +275,6 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
-            },
           ),
           const SpaceHeight(10),
           TextFormField(
@@ -321,12 +292,6 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
-            },
           ),
           const SpaceHeight(10),
           TextFormField(
@@ -342,12 +307,6 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
-            },
           ),
           const SpaceHeight(10),
           TextFormField(
@@ -361,12 +320,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 return 'Alamat Dokter tidak boleh kosong';
               }
               return null;
-            },
-            onChanged: (value) {
-              if (_formKey.currentState != null &&
-                  !_formKey.currentState!.validate()) {
-                setState(() {});
-              }
             },
           ),
         ],
@@ -457,8 +410,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   onChanged: (value) {
                     setState(() {
                       selectedRole = value!;
-                      _formKey.currentState
-                          ?.reset(); // Reset form when role changes
                     });
                   },
                   decoration: _inputDecoration(
@@ -484,12 +435,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       return 'Username tidak boleh kosong';
                     }
                     return null;
-                  },
-                  onChanged: (value) {
-                    if (_formKey.currentState != null &&
-                        !_formKey.currentState!.validate()) {
-                      setState(() {});
-                    }
                   },
                 ),
                 const SpaceHeight(16),
@@ -519,12 +464,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     }
                     return null;
                   },
-                  onChanged: (value) {
-                    if (_formKey.currentState != null &&
-                        !_formKey.currentState!.validate()) {
-                      setState(() {});
-                    }
-                  },
                 ),
                 const SpaceHeight(20), // Spacing
                 _buildFormField(),
@@ -552,8 +491,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                             : null,
                                     patientGender:
                                         selectedRole == 'pasien'
-                                            ? patientGenderController.text
-                                                .trim()
+                                            ? selectedGender
                                             : null,
                                     patientPhone:
                                         selectedRole == 'pasien'
